@@ -1,11 +1,20 @@
 /* ============================================================
-   PARALLEL ME — Point d'entrée
-   Assemble les six écrans, câble les actions, garantit qu'aucun
-   bouton n'est décoratif : chaque `data-act` a une entrée dans
+   PARALLEL ME - Point d'entree
+   Assemble les six ecrans, cable les actions, garantit qu'aucun
+   bouton n'est decoratif : chaque `data-act` a une entree dans
    le tableau d'actions ci-dessous.
+
+   CORRECTIFS APPLIQUES
+   P1 : THE CROSSROADS recoit l'etat de la branche active (contexte)
+        et le journal correspondant. Jouer dans une branche fait
+        desormais avancer CETTE branche.
+   P2 : un objectif deja inscrit au journal n'y est plus rejoue
+        (marqueur `objectifsJournalises` porte par l'etat).
+   P3 : import unique de atlas.js ; `nommerParametres` non utilise
+        a ete retire.
    ============================================================ */
 
-import { peindre, lier, h, brut, idCourt, esc } from "./state/dom.js";
+import { peindre, lier, h, brut, idCourt } from "./state/dom.js";
 import * as store from "./state/store.js";
 import { ecranMultiverse } from "./ui/screens/multiverse.js";
 import { ecranGenerator } from "./ui/screens/generator.js";
@@ -13,15 +22,37 @@ import { ecranEntree } from "./ui/screens/entree.js";
 import { ecranCrossroads } from "./ui/screens/crossroads.js";
 import { ecranJournal } from "./ui/screens/journal.js";
 import { ecranAtlas } from "./ui/screens/atlas.js";
-import { nommerParametres } from "./ui/screens/atlas.js";
 import { modaleRenommer, modaleSupprimer, modaleGerer, modaleFragment, modaleReinitialiser } from "./ui/modales.js";
 import { PACKS, brouillonVide, packPourDecor, libelle, ROLES, DECORS, AMBIANCES, DEFIS } from "./data/params.js";
-import { etatInitial, appliquerChoix, choixJouables } from "./engine/narrative.js";
+import { etatInitial, appliquerChoix } from "./engine/narrative.js";
 import { entree, creerBranche, dupliquer, decrireChangements } from "./engine/journal.js";
 import { objectifAtteint } from "./ui/objectifs.js";
 
 const racine = document.getElementById("app");
 let interfaceLocale = { modale: null, hotspot: null };
+
+/* ---------- Etat courant, branche ou lignee principale ---------- */
+
+function brancheActive(univers) {
+  if (!univers || !store.etat.brancheId) return null;
+  return (univers.branches || []).find((b) => b.id === store.etat.brancheId) || null;
+}
+
+/** Journal actif : celui de la branche si l'on joue dans une branche. */
+function journalActifDe(univers) {
+  const b = brancheActive(univers);
+  return b ? (b.entries || []) : (univers.journal || []);
+}
+
+/** Contexte transmis aux ecrans : etat vivant + journal correspondant. */
+function contexteDe(univers) {
+  const b = brancheActive(univers);
+  return {
+    etatCourant: b ? b.state : (univers ? univers.state : null),
+    journal: journalActifDe(univers),
+    branche: b,
+  };
+}
 
 /* ---------- Rendu ---------- */
 
@@ -29,22 +60,23 @@ function rendre() {
   const etat = store.etat;
   const univers = store.universActif();
   const ecran = etat.ecran;
+  const contexte = univers ? contexteDe(univers) : null;
 
   let corps;
   switch (ecran) {
     case "generator": corps = ecranGenerator(etat); break;
     case "entree":    corps = univers ? ecranEntree(etat, univers) : ecranMultiverse(etat); break;
-    case "crossroads":corps = univers ? ecranCrossroads(etat, univers) : ecranMultiverse(etat); break;
+    case "crossroads":corps = univers ? ecranCrossroads(etat, univers, contexte) : ecranMultiverse(etat); break;
     case "journal":   corps = univers ? ecranJournal(etat, univers) : ecranMultiverse(etat); break;
     case "atlas":     corps = ecranAtlas(etat); break;
     default:          corps = ecranMultiverse(etat);
   }
 
   const onglets = [
-    ["multiverse", "◍", "Multivers"],
-    ["generator", "✧", "Créer"],
-    ["journal", "▤", "Journal"],
-    ["atlas", "◎", "Atlas"],
+    ["multiverse", "MR", "Multivers"],
+    ["generator", "CR", "Creer"],
+    ["journal", "JO", "Journal"],
+    ["atlas", "AT", "Atlas"],
   ].map(([cle, icone, nom]) => h`
     <button data-act="onglet" data-ecran="${cle}" aria-current="${ecran === cle || (cle === "multiverse" && (ecran === "entree" || ecran === "crossroads")) ? "page" : "false"}">
       <span aria-hidden="true">${icone}</span><span>${nom}</span>
@@ -70,7 +102,7 @@ function majUnivers(id, transforme) {
   return suivant;
 }
 
-/** Écrit une entrée dans le journal actif (univers ou branche). */
+/** Ecrit une entree dans le journal actif (univers ou branche). */
 function journaliser(id, uneEntree) {
   majUnivers(id, (u) => {
     if (store.etat.brancheId) {
@@ -85,13 +117,16 @@ function journaliser(id, uneEntree) {
   });
 }
 
-/** État courant : celui de la branche active, ou de l'univers. */
+/** Etat courant : celui de la branche active, ou de l'univers. */
 function etatCourantDe(univers) {
-  if (!univers) return null;
-  const b = (univers.branches || []).find((x) => x.id === store.etat.brancheId);
-  return b ? b.state : univers.state;
+  const c = contexteDe(univers);
+  return c.etatCourant;
 }
 
+/**
+ * Remplace l'etat vivant - branche si l'on joue dans une branche,
+ * lignee principale sinon.
+ */
 function remplacerEtatCourant(id, nouvelEtat) {
   majUnivers(id, (u) => {
     if (store.etat.brancheId) {
@@ -121,9 +156,9 @@ const actions = {
     store.activer(el.getAttribute("data-id"));
     const u = store.universActif();
     const pack = PACKS[u.packId];
-    // Reprise réelle : si l'on a déjà dépassé l'introduction, on
-    // rouvre la scène enregistrée plutôt que l'entrée.
-    const deja = (u.state.visited || []).length > 1 || u.state.sceneId !== pack?.startSceneId;
+    // Reprise reelle : si l'on a deja depasse l'introduction, on
+    // rouvre la scene enregistree plutot que l'entree.
+    const deja = (u.state.visited || []).length > 1 || u.state.sceneId !== (pack ? pack.startSceneId : null);
     store.aller(deja ? "crossroads" : "entree");
   },
 
@@ -132,7 +167,7 @@ const actions = {
     store.activer(id);
     const u = store.universActif();
     const pack = PACKS[u.packId];
-    const deja = (u.state.visited || []).length > 1 || u.state.sceneId !== pack?.startSceneId;
+    const deja = (u.state.visited || []).length > 1 || u.state.sceneId !== (pack ? pack.startSceneId : null);
     store.aller(deja ? "crossroads" : "entree");
   },
 
@@ -148,14 +183,18 @@ const actions = {
   defi(el) { majBrouillon({ defi: el.getAttribute("data-valeur") }); },
   etape(el) { majBrouillon({ etape: Number(el.getAttribute("data-n")) }); },
 
-  suivant() { majBrouillon({ etape: Math.min(3, (store.etat.generateur?.etape || 0) + 1) }); },
-  precedent() { majBrouillon({ etape: Math.max(0, (store.etat.generateur?.etape || 0) - 1) }); },
+  suivant() { majBrouillon({ etape: Math.min(3, ((store.etat.generateur && store.etat.generateur.etape) || 0) + 1) }); },
+  precedent() { majBrouillon({ etape: Math.max(0, ((store.etat.generateur && store.etat.generateur.etape) || 0) - 1) }); },
 
   predefini(el) {
     const packId = el.getAttribute("data-pack");
-    const meta = { space: ["ingenieur", "anneau", "tension", "reacteur"], studio: ["artiste", "atelier", "calme", "commande"], atlas: ["archiviste", "cite", "mystere", "carte_fausse"] }[packId];
+    const meta = {
+      space: ["ingenieur", "anneau", "tension", "reacteur"],
+      studio: ["artiste", "atelier", "calme", "commande"],
+      atlas: ["archiviste", "cite", "mystere", "carte_fausse"],
+    }[packId];
     majBrouillon({
-      packId, nom: PACKS[packId].title,
+      packId: packId, nom: PACKS[packId].title,
       role: meta[0], decor: meta[1], ambiance: meta[2], defi: meta[3], etape: 3,
     });
   },
@@ -178,15 +217,16 @@ const actions = {
 
     const id = idCourt("u");
     const univers = {
-      id,
+      id: id,
       name: nom,
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      packId,
-      params,
+      packId: packId,
+      params: params,
       state: etatInitial(pack, params),
-      journal: [entree("creation", `Univers créé : ${nom}`, {
-        detail: `${pack.title} · ${params.role} · ${params.mood} · ${params.challenge}${params.freeNote ? ` · « ${params.freeNote} »` : ""}`,
+      journal: [entree("creation", "Univers cree : " + nom, {
+        detail: pack.title + " / " + params.role + " / " + params.mood + " / " + params.challenge +
+          (params.freeNote ? " / " + params.freeNote : ""),
         sceneId: pack.startSceneId,
       })],
       branches: [],
@@ -206,27 +246,34 @@ const actions = {
     const nom = el.getAttribute("data-nom") || el.textContent.trim();
     const univers = store.universActif();
     const pack = PACKS[univers.packId];
-    const scene = pack?.scenes?.[univers.state.sceneId] || pack?.scenes?.[pack.startSceneId];
-    const hotspot = (scene?.hotspots || []).find((x) => x.nom === nom);
+    const courant = etatCourantDe(univers);
+    const scene = (pack && pack.scenes && pack.scenes[courant.sceneId]) ||
+      (pack && pack.scenes && pack.scenes[pack.startSceneId]);
+    const hotspot = ((scene && scene.hotspots) || []).find((x) => x.nom === nom);
     if (!hotspot) return;
     interfaceLocale.modale = modaleFragment(hotspot.nom, hotspot.texte);
+
     if (hotspot.objet) {
-      journaliser(univers.id, entree("item", `Objet découvert : ${pack.objects[hotspot.objet]?.nom || hotspot.objet}`, {
-        detail: pack.objects[hotspot.objet]?.detail || "",
-        sceneId: univers.state.sceneId,
+      const objet = pack.objects && pack.objects[hotspot.objet];
+      journaliser(univers.id, entree("item", "Objet decouvert : " +
+        ((objet && objet.nom) || hotspot.objet), {
+        detail: (objet && objet.detail) || "",
+        sceneId: courant.sceneId,
       }));
+      const cle = "objet:" + hotspot.objet;
+      const ajouter = (etatVise) => ({
+        ...etatVise,
+        flags: etatVise.flags.includes(cle) ? etatVise.flags : etatVise.flags.concat([cle]),
+      });
       majUnivers(univers.id, (u) => {
-        const cle = `objet:${hotspot.objet}`;
-        const cible = store.etat.brancheId ? "branches" : null;
-        if (cible) {
+        if (store.etat.brancheId) {
           return {
             ...u,
-            branches: u.branches.map((b) => b.id === store.etat.brancheId
-              ? { ...b, state: { ...b.state, flags: b.state.flags.includes(cle) ? b.state.flags : [...b.state.flags, cle] } }
-              : b),
+            branches: u.branches.map((b) =>
+              b.id === store.etat.brancheId ? { ...b, state: ajouter(b.state) } : b),
           };
         }
-        return { ...u, state: { ...u.state, flags: u.state.flags.includes(cle) ? u.state.flags : [...u.state.flags, cle] } };
+        return { ...u, state: ajouter(u.state) };
       });
     }
     rendre();
@@ -238,35 +285,66 @@ const actions = {
     const pack = PACKS[univers.packId];
     const courant = etatCourantDe(univers);
     const scene = pack.scenes[courant.sceneId];
+    if (!scene) return;
     const choix = scene.choices.find((c) => c.id === el.getAttribute("data-choix"));
     if (!choix) return;
 
-    const { etat: suivant, changements, objets, avertissement } = appliquerChoix(courant, choix, pack);
-    if (avertissement) {
-      store.signaler(avertissement);
-    }
+    const resultat = appliquerChoix(courant, choix, pack);
+    const suivant = resultat.etat;
+    const changements = resultat.changements;
+    const objets = resultat.objets;
+    if (resultat.avertissement) store.signaler(resultat.avertissement);
 
-    remplacerEtatCourant(univers.id, suivant);
+    // P2 : les objectifs deja inscrits au journal sont memorises
+    // dans l'etat, pour ne pas y etre rejoues a chaque passage.
+    const dejaInscrits = suivant.objectifsJournalises || [];
+    const nouveaux = [];
+    for (const o of (pack.objectifs || [])) {
+      if (!objectifAtteint(o, suivant)) continue;
+      if (dejaInscrits.indexOf(o.id) !== -1) continue;
+      nouveaux.push(o);
+    }
+    const etatFinal = {
+      ...suivant,
+      objectifsJournalises: dejaInscrits.concat(nouveaux.map((o) => o.id)),
+    };
+
+    remplacerEtatCourant(univers.id, etatFinal);
+
+    const detail = [
+      decrireChangements(changements),
+      objets.length ? "objet : " + objets.map((o) => (pack.objects[o] && pack.objects[o].nom) || o).join(", ") : "",
+      choix.hint ? "Enjeu : " + choix.hint : "",
+    ].filter(Boolean).join(" - ");
 
     journaliser(univers.id, {
       ...entree("choice", choix.label, {
-        detail: [
-          decrireChangements(changements),
-          objets.length ? `objet : ${objets.map((o) => pack.objects[o]?.nom || o).join(", ")}` : "",
-          choix.hint ? `Enjeu : ${choix.hint}` : "",
-        ].filter(Boolean).join(" · "),
-        sceneId: suivant.sceneId,
-        changements,
-        objets,
+        detail: detail,
+        sceneId: etatFinal.sceneId,
+        changements: changements,
+        objets: objets,
       }),
-      etatApres: suivant,
+      etatApres: etatFinal,
     });
+
+    for (const o of nouveaux) {
+      journaliser(univers.id, entree("goal", "Objectif atteint : " + o.nom, {
+        sceneId: etatFinal.sceneId,
+      }));
+    }
+
+    const sceneSuivante = pack.scenes[etatFinal.sceneId];
+    if (sceneSuivante && sceneSuivante.ending) {
+      journaliser(univers.id, entree("scene", "Fin atteinte : " + sceneSuivante.title, {
+        detail: "Issue : " + sceneSuivante.ending.kind,
+        sceneId: etatFinal.sceneId,
+      }));
+    }
 
     store.aller("crossroads");
   },
 
-  riren() { /* choix verrouillé : aucun effet, la raison est déjà affichée */ },
-  rien() { /* idem */ },
+  rien() { /* choix verrouille : aucun effet, la raison est deja affichee */ },
 
   /* --- Journal / branches --- */
   "branche-depuis"(el) {
@@ -274,14 +352,13 @@ const actions = {
     const pack = PACKS[univers.packId];
     const sceneId = el.getAttribute("data-scene");
     const scene = pack.scenes[sceneId];
-    const avant = univers.branches?.length || 0;
+    if (!scene) return;
     const maj = creerBranche(univers, sceneId, scene.title);
     majUnivers(univers.id, () => maj);
     const nouvelle = maj.branches[maj.branches.length - 1];
-    if (!nouvelle) { store.signaler("Création de branche impossible."); return; }
+    if (!nouvelle) { store.signaler("Creation de branche impossible."); return; }
     store.etat.brancheId = nouvelle.id;
     store.notifier();
-    void avant;
   },
 
   "branche-ouvrir"(el) {
@@ -295,7 +372,9 @@ const actions = {
   "branche-ici"() {
     const univers = store.universActif();
     const pack = PACKS[univers.packId];
-    const scene = pack.scenes[univers.state.sceneId];
+    const courant = etatCourantDe(univers);
+    const scene = pack.scenes[courant.sceneId];
+    if (!scene) return;
     const maj = creerBranche(univers, scene.id, scene.title);
     majUnivers(univers.id, () => maj);
     const nouvelle = maj.branches[maj.branches.length - 1];
@@ -309,7 +388,10 @@ const actions = {
     majUnivers(univers.id, (u) => ({
       ...u,
       state: etatInitial(pack, u.params),
-      journal: [...u.journal, entree("scene", "Univers recommencé", { detail: "Nouvelle lignée principale, branches conservées.", sceneId: pack.startSceneId })],
+      journal: u.journal.concat([entree("scene", "Univers recommence", {
+        detail: "Nouvelle lignee principale, branches conservees.",
+        sceneId: pack.startSceneId,
+      })]),
     }));
     store.etat.brancheId = null;
     store.aller("entree");
@@ -320,9 +402,10 @@ const actions = {
   "gerer-dupliquer"(el) {
     const id = el.getAttribute("data-id");
     const u = store.etat.universes.find((x) => x.id === id);
-    const { copie, tous } = dupliquer(u, store.etat.universes);
-    store.etat.universes = tous;
-    store.etat.actifId = copie.id;
+    const res = dupliquer(u, store.etat.universes);
+    store.etat.universes = res.tous;
+    store.etat.actifId = res.copie.id;
+    store.etat.brancheId = null;
     interfaceLocale.modale = null;
     store.persister();
     store.aller("crossroads");
@@ -340,8 +423,8 @@ const actions = {
   "renommer-valider"(el) {
     const id = el.getAttribute("data-id");
     const champ = racine.querySelector('[data-act-input="nom-modale"]');
-    const nom = (champ?.value || "").trim();
-    if (!nom) { store.signaler("Le nom ne peut pas être vide."); return; }
+    const nom = ((champ && champ.value) || "").trim();
+    if (!nom) { store.signaler("Le nom ne peut pas etre vide."); return; }
     majUnivers(id, (u) => ({ ...u, name: nom }));
     interfaceLocale.modale = null;
     store.notifier();
@@ -355,8 +438,9 @@ const actions = {
     const id = el.getAttribute("data-id");
     store.etat.universes = store.etat.universes.filter((u) => u.id !== id);
     if (store.etat.actifId === id) {
-      const suivant = [...store.etat.universes].sort((a, b) => b.updatedAt - a.updatedAt)[0];
-      store.etat.actifId = suivant ? suivant.id : null;
+      const reste = store.etat.universes.slice().sort((a, b) => b.updatedAt - a.updatedAt)[0];
+      store.etat.actifId = reste ? reste.id : null;
+      store.etat.brancheId = null;
     }
     interfaceLocale.modale = null;
     store.persister();
@@ -372,7 +456,7 @@ const actions = {
   "atlas-choisir"(el) {
     const id = el.getAttribute("data-id");
     const s = store.etat.atlasSelection || [];
-    const neuve = s.includes(id) ? s.filter((x) => x !== id) : [...s, id].slice(-2);
+    const neuve = s.includes(id) ? s.filter((x) => x !== id) : s.concat([id]).slice(-2);
     store.etat.atlasSelection = neuve;
     store.notifier();
   },
@@ -380,9 +464,9 @@ const actions = {
   "atlas-dupliquer"(el) {
     const id = el.getAttribute("data-id");
     const u = store.etat.universes.find((x) => x.id === id);
-    const { copie, tous } = dupliquer(u, store.etat.universes);
-    store.etat.universes = tous;
-    store.etat.actifId = copie.id;
+    const res = dupliquer(u, store.etat.universes);
+    store.etat.universes = res.tous;
+    store.etat.actifId = res.copie.id;
     store.persister();
     store.aller("crossroads");
   },
@@ -404,7 +488,8 @@ const actions = {
 };
 
 function majBrouillon(partiel) {
-  const b = { ...(store.etat.generateur || brouillonVide()), ...partiel };
+  const base = store.etat.generateur || brouillonVide();
+  const b = Object.assign({}, base, partiel);
   b.packId = packPourDecor(b.decor, b.defi);
   store.definirBrouillonGenerateur(b);
 }
@@ -420,11 +505,11 @@ const saisies = {
   "nom-modale": () => {},
 };
 
-/* ---------- Démarrage ---------- */
+/* ---------- Demarrage ---------- */
 
 lier(racine, actions);
 racine.addEventListener("input", (e) => {
-  const cible = e.target.closest?.("[data-act-input]");
+  const cible = e.target.closest ? e.target.closest("[data-act-input]") : null;
   if (cible) {
     const f = saisies[cible.getAttribute("data-act-input")];
     if (f) f(cible);
@@ -432,7 +517,7 @@ racine.addEventListener("input", (e) => {
 });
 store.sAbonner(rendre);
 
-// Un rechargement doit retrouver exactement la même scène (§T6).
+// Un rechargement doit retrouver exactement la meme scene.
 window.addEventListener("pagehide", () => store.persister());
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") store.persister();
