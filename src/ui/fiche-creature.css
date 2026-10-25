@@ -1,0 +1,47 @@
+/* ============================================================
+   PARALLEL ME - Fiches de creatures
+   Habillage des fiches. La palette vient de --teinte, posee par
+   la fiche elle-meme, pour que chaque creature ait sa couleur
+   sans multiplier les regles.
+   ============================================================ */
+
+.fiche-creature {
+  position: relative;
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px;
+  margin-bottom: 18px;
+  border-radius: var(--r-l);
+  border: 1px solid rgba(199,185,255,.22);
+  background:
+    radial-gradient(circle at 12% 30%, var(--teinte), transparent 62%),
+    linear-gradient(135deg, rgba(102,84,232,.30), rgba(9,11,29,.85));
+  overflow: hidden;
+}
+
+/* Sceau : disque lumineux, qui bat tres lentement. */
+.fiche-creature__sceau {
+  flex: 0 0 46px; width: 46px; height: 46px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 32%, #fff, var(--teinte) 58%, transparent 78%);
+  box-shadow: 0 0 18px var(--teinte);
+  animation: sceau-bat 4.4s ease-in-out infinite;
+}
+@keyframes sceau-bat {
+  0%, 100% { transform: scale(.92); opacity: .82; }
+  50%      { transform: scale(1.06); opacity: 1; }
+}
+
+.fiche-creature__corps { min-width: 0; }
+.fiche-creature__nom {
+  font: 600 20px/26px -apple-system, "SF Pro Display", system-ui, sans-serif;
+  letter-spacing: -.01em;
+}
+.fiche-creature__titre {
+  font: var(--f-meta);
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--lavande);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fiche-creature__sceau { animation: none !important; }
+}
