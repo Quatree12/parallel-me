@@ -3,13 +3,23 @@
    Scenes interactives a deux ou trois choix. Chaque decision
    modifie l'etat de l'histoire et les scenes accessibles.
    Les choix verrouilles restent VISIBLES avec leur raison.
+
+   CORRECTIF P1 : l'ecran ne lit plus `univers.state` en dur.
+   Il recoit l'etat courant (branche active ou lignee principale)
+   et le journal correspondant, sinon jouer dans une branche
+   modifiait la lignee principale.
    ============================================================ */
 
 import { h, esc, brut } from "../../state/dom.js";
 import { PACKS } from "../../data/params.js";
 import { choixDisponibles } from "../../engine/narrative.js";
 
-export function ecranCrossroads(etat, univers) {
+/**
+ * @param etat         etat global du store
+ * @param univers      univers actif
+ * @param contexte     { etatCourant, journal } fourni par main.js
+ */
+export function ecranCrossroads(etat, univers, contexte) {
   const pack = PACKS[univers.packId];
   if (!pack) {
     return h`
@@ -23,7 +33,9 @@ export function ecranCrossroads(etat, univers) {
       </div>`;
   }
 
-  const etatCourant = univers.state;
+  // L'etat courant vient du contexte ; repli sur l'univers si absent.
+  const etatCourant = (contexte && contexte.etatCourant) || univers.state;
+  const journalActif = (contexte && contexte.journal) || univers.journal || [];
   const scene = pack.scenes[etatCourant.sceneId];
   const branche = (univers.branches || []).find((b) => b.id === etat.brancheId) || null;
 
@@ -79,7 +91,9 @@ export function ecranCrossroads(etat, univers) {
       <button class="btn btn--secondaire" style="margin-top:10px" data-act="branche-ici">Creer une branche depuis cette scene</button>`
     : "";
 
-  const dernier = [...(univers.journal || [])].reverse().find((x) => x.kind === "choice");
+  // L'echo vient du journal ACTIF : dans une branche, c'est
+  // l'historique de la branche qui compte.
+  const dernier = journalActif.slice().reverse().find((x) => x.kind === "choice");
   const echo = dernier
     ? h`<div class="badge badge--cyan" style="margin-bottom:16px">Derniere decision : ${dernier.label}</div>`
     : "";
