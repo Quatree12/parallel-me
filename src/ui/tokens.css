@@ -1,0 +1,70 @@
+/* ============================================================
+   PARALLEL ME — Design tokens
+   Matière : Parallel Glass. Palette et recettes définies en §4
+   des fondations. Aucune couleur en dur ailleurs que dans ce
+   fichier (sauf dégradés de pack, injectés en variables).
+   ============================================================ */
+
+:root {
+  /* ---- Palette ---- */
+  --nuit:      #090B1D;
+  --nuit-2:    #15183A;
+  --indigo:    #6654E8;
+  --lavande:   #C7B9FF;
+  --rose:      #F29BBF;
+  --cyan:      #75DDEB;
+
+  /* ---- Dérivés ---- */
+  --texte:        #EDEBFF;
+  --texte-doux:   #A9A3D6;
+  --texte-faible: #6F6A9B;
+  --verre-bord:   rgba(199, 185, 255, .22);
+  --verre-bord-2: rgba(199, 185, 255, .14);
+  --verre-voile:  rgba(9, 11, 29, .72);
+
+  /* ---- Dégradés signature ---- */
+  --grad-portail: linear-gradient(135deg, #6654E8, #F29BBF);
+  --grad-carte:   linear-gradient(180deg, rgba(21,24,58,.78), rgba(9,11,29,.86));
+  --grad-fond:
+    radial-gradient(120% 80% at 78% -8%, rgba(102,84,232,.34), transparent 58%),
+    radial-gradient(90% 62% at 8% 104%, rgba(242,155,191,.20), transparent 62%),
+    radial-gradient(70% 50% at 50% 46%, rgba(117,221,235,.07), transparent 70%),
+    var(--nuit);
+
+  /* ---- Typographie ---- */
+  --f-titre:   600 30px/36px -apple-system, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+  --f-scene:   600 23px/30px -apple-system, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+  --f-corps:   400 16px/26px -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --f-ui:      500 14px/20px -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --f-meta:    500 12px/16px -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+
+  /* ---- Espacement ---- */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 20px; --s6: 24px; --s7: 32px; --s8: 44px;
+
+  /* ---- Rayons ---- */
+  --r-s: 12px; --r-m: 18px; --r-l: 22px; --r-xl: 30px; --r-plein: 999px;
+
+  /* ---- Mouvement (§4.5) ---- */
+  --t-ecran:  420ms;
+  --t-scene:  520ms;
+  --t-branche:680ms;
+  --courbe:   cubic-bezier(.22,.61,.36,1);
+
+  /* ---- Cible tactile (§4.4) ---- */
+  --cible: 44px;
+
+  /* ---- Safe area iPhone ---- */
+  --sa-haut: env(safe-area-inset-top, 0px);
+  --sa-bas:  env(safe-area-inset-bottom, 0px);
+}
+
+/* Repli : toute animation est neutralisée, aucune interaction
+   n'en dépend. (§4.5) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
