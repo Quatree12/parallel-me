@@ -1,8 +1,8 @@
 /* ============================================================
    ECRAN 1 - YOUR MULTIVERSE
    Chaque sphere est un MONDE ANIME : astres, station, creatures,
-   fantomes, objets qui derivent. Aucune image binaire, donc tout
-   se met a jour par simple poussee de texte.
+   fantomes, objets qui derivent. Aucune reference a une image,
+   donc plus aucun carre manquant.
    ============================================================ */
 
 import { h, esc, brut } from "../../state/dom.js";

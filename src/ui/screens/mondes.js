@@ -30,7 +30,7 @@ function fantome(classe) {
 
 function lanterne(classe, teinte, delai) {
   return '<span class="m-lanterne ' + classe + '" aria-hidden="true" style="--teinte:' +
-    teinte + ";animation-delay:" + delai + 's"></span>';
+    teinte + ';animation-delay:' + delai + 's"></span>';
 }
 
 function sceneSpace() {
