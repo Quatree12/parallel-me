@@ -4,20 +4,49 @@
    modifie l'etat de l'histoire et les scenes accessibles.
    Les choix verrouilles restent VISIBLES avec leur raison.
 
-   CORRECTIF P1 : l'ecran ne lit plus `univers.state` en dur.
-   Il recoit l'etat courant (branche active ou lignee principale)
-   et le journal correspondant, sinon jouer dans une branche
-   modifiait la lignee principale.
+   P1 : l'ecran lit l'etat courant et le journal recus en contexte
+        (branche active ou lignee principale).
+
+   ETAPE 4 : une rangee de CREATURES PRESENTES. Toucher une
+   creature ouvre sa fiche (data-act="creature"). Celles deja
+   rencontrees dans cette vie portent une marque.
    ============================================================ */
 
 import { h, esc, brut } from "../../state/dom.js";
 import { PACKS } from "../../data/params.js";
+import { CREATURES, drapeauDe } from "../../data/creatures.js";
 import { choixDisponibles } from "../../engine/narrative.js";
 
+const TEINTE_UNIVERS = {
+  aquaria: "#75DDEB",
+  solaris: "#F29BBF",
+  nexus: "#C7B9FF",
+  "terra-lumina": "#75DDEB",
+  dreamy: "#F29BBF",
+  umbra: "#6654E8",
+  lysea: "#C7B9FF",
+};
+
+/** Une pastille de creature, marquee si deja rencontree. */
+function pastilleCreature(creature, dejaVue) {
+  const teinte = TEINTE_UNIVERS[creature.univers] || creature.teinte || "#6654E8";
+  const marque = dejaVue ? " (deja rencontree)" : "";
+  return (
+    '<button class="creature-pastille" data-act="creature" data-creature="' +
+      esc(creature.id) + '" data-vue="' + String(dejaVue) + '"' +
+      ' style="--teinte:' + teinte + '"' +
+      ' aria-label="Rencontrer ' + esc(creature.nom) + marque + '">' +
+      '<span class="creature-pastille__sceau" aria-hidden="true"></span>' +
+      '<span class="creature-pastille__nom">' + esc(creature.nom) + "</span>" +
+      '<span class="creature-pastille__titre">' + esc(creature.titre) + "</span>" +
+    "</button>"
+  );
+}
+
 /**
- * @param etat         etat global du store
- * @param univers      univers actif
- * @param contexte     { etatCourant, journal } fourni par main.js
+ * @param etat      etat global du store
+ * @param univers   univers actif
+ * @param contexte  { etatCourant, journal } fourni par main.js
  */
 export function ecranCrossroads(etat, univers, contexte) {
   const pack = PACKS[univers.packId];
@@ -33,7 +62,6 @@ export function ecranCrossroads(etat, univers, contexte) {
       </div>`;
   }
 
-  // L'etat courant vient du contexte ; repli sur l'univers si absent.
   const etatCourant = (contexte && contexte.etatCourant) || univers.state;
   const journalActif = (contexte && contexte.journal) || univers.journal || [];
   const scene = pack.scenes[etatCourant.sceneId];
@@ -57,7 +85,7 @@ export function ecranCrossroads(etat, univers, contexte) {
     : "";
 
   const doses = (pack.variablesAffichees || []).map((v) => {
-    const valeur = Number(etatCourant.variables[v.cle] ?? 0);
+    const valeur = Number(etatCourant.variables[v.cle] || 0);
     const max = v.max || 10;
     const pct = Math.max(4, Math.min(100, Math.round((valeur / max) * 100)));
     return h`
@@ -91,12 +119,24 @@ export function ecranCrossroads(etat, univers, contexte) {
       <button class="btn btn--secondaire" style="margin-top:10px" data-act="branche-ici">Creer une branche depuis cette scene</button>`
     : "";
 
-  // L'echo vient du journal ACTIF : dans une branche, c'est
-  // l'historique de la branche qui compte.
   const dernier = journalActif.slice().reverse().find((x) => x.kind === "choice");
   const echo = dernier
     ? h`<div class="badge badge--cyan" style="margin-bottom:16px">Derniere decision : ${dernier.label}</div>`
     : "";
+
+  const flags = etatCourant.flags || [];
+  const rencontrees = CREATURES.filter((c) => flags.indexOf(drapeauDe(c)) !== -1).length;
+  const pastilles = CREATURES
+    .map((c) => pastilleCreature(c, flags.indexOf(drapeauDe(c)) !== -1))
+    .join("");
+
+  const blocCreatures = h`
+    <h2 class="section-titre">Creatures presentes</h2>
+    <p class="vide-note" style="margin-bottom:12px">
+      ${rencontrees} sur ${CREATURES.length} deja rencontree(s) dans cette vie.
+      Toucher une creature ouvre sa fiche : une premiere rencontre modifie l'etat de l'histoire.
+    </p>
+    <div class="creatures">${brut(pastilles)}</div>`;
 
   return h`
     <div class="ecran">
@@ -108,7 +148,7 @@ export function ecranCrossroads(etat, univers, contexte) {
         ${brut(scene.body.map((par) => `<p>${esc(par)}</p>`).join(""))}
       </div>
 
-      ${scene.hotspots?.length ? brut(`
+      ${scene.hotspots && scene.hotspots.length ? brut(`
         <h2 class="section-titre">Dans la scene</h2>
         <div class="objets">
           ${(scene.hotspots || []).map((hs) => `<button class="objet" data-act="fragment" data-objet="${hs.objet || ""}" data-nom="${esc(hs.nom)}"><span aria-hidden="true">*</span> ${esc(hs.nom)}</button>`).join("")}
@@ -121,6 +161,8 @@ export function ecranCrossroads(etat, univers, contexte) {
         <h2 class="section-titre">The Crossroads</h2>
         ${choixHtml}
       `)}
+
+      ${brut(blocCreatures)}
 
       <h2 class="section-titre">Etat de cette vie</h2>
       <div class="glass-card" style="padding:16px">${brut(doses)}</div>

@@ -1,0 +1,58 @@
+/* ============================================================
+   PARALLEL ME - Pastilles de creatures (THE CROSSROADS)
+   Une rangee de rencontres possibles. Chaque pastille porte sa
+   teinte via --teinte, posee par le HTML. Les creatures deja
+   rencontrees sont attenuees, mais restent touchables.
+   ============================================================ */
+
+.creatures {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s3);
+}
+
+.creature-pastille {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: var(--s3) var(--s2);
+  min-height: 96px;
+  border-radius: var(--r-m);
+  border: 1px solid var(--verre-bord-2);
+  background: linear-gradient(180deg, rgba(21,24,58,.72), rgba(9,11,29,.86));
+  cursor: pointer;
+  transition: border-color 200ms var(--courbe), transform 180ms var(--courbe);
+  text-align: center;
+}
+.creature-pastille:active { transform: scale(.96); }
+
+.creature-pastille__sceau {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 32%, #fff, var(--teinte) 56%, transparent 78%);
+  box-shadow: 0 0 14px var(--teinte);
+  animation: sceau-bat 4.6s ease-in-out infinite;
+}
+
+.creature-pastille__nom {
+  font: 600 13px/17px -apple-system, system-ui, sans-serif;
+  color: var(--texte);
+}
+.creature-pastille__titre {
+  font: 500 9px/12px -apple-system, system-ui, sans-serif;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--texte-doux);
+}
+
+.creature-pastille[data-vue="true"] {
+  border-color: rgba(199,185,255,.10);
+  background: rgba(15,17,42,.5);
+}
+.creature-pastille[data-vue="true"] .creature-pastille__sceau {
+  animation: none;
+  opacity: .45;
+  box-shadow: none;
+}
+.creature-pastille[data-vue="true"] .creature-pastille__nom { color: var(--texte-doux); }
+
+@media (prefers-reduced-motion: reduce) {
+  .creature-pastille__sceau { animation: none !important; }
+}
