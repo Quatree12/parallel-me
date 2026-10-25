@@ -1,6 +1,6 @@
 /* ============================================================
-   PARALLEL ME — Feuille de style applicative
-   Mobile-first iPhone. Grille, matière Parallel Glass, composants.
+   PARALLEL ME - Feuille de style applicative
+   Mobile-first iPhone. Grille, matiere Parallel Glass, composants.
    ============================================================ */
 
 * { box-sizing: border-box; }
@@ -29,12 +29,11 @@ button { font: inherit; color: inherit; }
   background-attachment: fixed;
   display: flex;
   flex-direction: column;
-  max-width: 480px;          /* iPhone : on ne s'étire jamais au-delà */
+  max-width: 480px;
   margin: 0 auto;
   overflow-x: hidden;
 }
 
-/* Halo cosmique de fond, très lent, jamais derrière du texte long */
 .app-shell::before {
   content: "";
   position: fixed;
@@ -48,47 +47,6 @@ button { font: inherit; color: inherit; }
 @keyframes derive {
   from { transform: translate3d(-6%, 0, 0) scale(1); }
   to   { transform: translate3d(6%, 2%, 0) scale(1.12); }
-}
-
-/* ---------- Chrome d'écran ---------- */
-
-.topbar {
-  position: sticky; top: 0; z-index: 30;
-  padding: calc(var(--sa-haut) + var(--s3)) var(--s4) var(--s3);
-  background: linear-gradient(180deg, rgba(9,11,29,.94) 62%, rgba(9,11,29,.55) 100%);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  border-bottom: 1px solid rgba(199,185,255,.08);
-  display: flex; align-items: center; gap: var(--s3);
-}
-.topbar__back {
-  flex: 0 0 auto; min-width: var(--cible); min-height: var(--cible);
-  display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid var(--verre-bord-2); border-radius: var(--r-plein);
-  background: rgba(21,24,58,.6); cursor: pointer;
-  transition: background 180ms var(--courbe), transform 180ms var(--courbe);
-}
-.topbar__back:active { transform: scale(.93); }
-.topbar__titles { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.topbar__eyebrow {
-  font: var(--f-meta); letter-spacing: .1em; text-transform: uppercase;
-  color: var(--cyan); opacity: .85;
-}
-.topbar__title {
-  font: 600 17px/22px -apple-system, "SF Pro Display", system-ui, sans-serif;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.topbar__actions { margin-left: auto; display: flex; gap: var(--s2); }
-.icon-btn {
-  min-width: var(--cible); min-height: var(--cible);
-  display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid var(--verre-bord-2); border-radius: var(--r-plein);
-  background: rgba(21,24,58,.6); cursor: pointer; font-size: 16px;
-  transition: background 180ms var(--courbe), transform 180ms var(--courbe);
-}
-.icon-btn:active { transform: scale(.93); }
-.icon-btn[aria-pressed="true"] {
-  background: rgba(102,84,232,.42); border-color: rgba(199,185,255,.5);
 }
 
 /* ---------- Corps ---------- */
@@ -133,7 +91,7 @@ button { font: inherit; color: inherit; }
   color: #fff;
 }
 
-/* ---------- Matière Parallel Glass ---------- */
+/* ---------- Matiere Parallel Glass ---------- */
 
 .glass-card {
   background: var(--grad-carte);
@@ -154,7 +112,7 @@ button { font: inherit; color: inherit; }
 }
 @keyframes tourne { to { transform: rotate(360deg); } }
 
-/* ---------- Sphère d'univers ---------- */
+/* ---------- Sphere d'univers illustree ---------- */
 
 .sphere {
   position: relative;
@@ -164,47 +122,49 @@ button { font: inherit; color: inherit; }
   background:
     radial-gradient(circle at 32% 28%,
       rgba(199,185,255,.30), var(--glow, rgba(102,84,232,.14)) 46%, rgba(9,11,29,.62));
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
   box-shadow: inset 0 2px 0 rgba(255,255,255,.18), 0 18px 44px rgba(9,11,29,.55);
   overflow: hidden;
-  display: grid; place-items: center;
   cursor: pointer;
   transition: transform 260ms var(--courbe);
   padding: 0;
 }
 .sphere:active { transform: scale(.96); }
-/* Monde miniature à l'intérieur — chaque univers a le sien */
-.sphere__monde {
-  position: absolute; inset: 0; opacity: .9;
+
+/* Le monde miniature habite tout le disque. */
+.sphere__monde-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; border-radius: 50%;
+  display: block;
+}
+
+/* Voile de lisibilite : le texte reste lisible quel que soit le monde. */
+.sphere__voile {
+  position: absolute; inset: 0; border-radius: 50%;
   background:
-    radial-gradient(circle at 62% 66%, var(--core, #6654E8) 0 14%, transparent 15%),
-    radial-gradient(circle at 38% 40%, var(--accent, #F29BBF) 0 9%, transparent 10%),
-    radial-gradient(ellipse at 50% 88%, rgba(199,185,255,.24), transparent 58%);
-  animation: respire 7s var(--courbe) infinite alternate;
+    radial-gradient(circle at 50% 50%, transparent 32%, rgba(9,11,29,.50) 100%),
+    linear-gradient(180deg, rgba(9,11,29,.34) 0%, transparent 30%, rgba(9,11,29,.80) 100%);
+  pointer-events: none;
 }
-@keyframes respire {
-  from { transform: scale(1); opacity: .74; }
-  to   { transform: scale(1.09); opacity: 1; }
-}
-.sphere__anneau {
-  position: absolute; width: 142%; height: 34%;
-  border: 1px solid rgba(117,221,235,.45);
-  border-radius: 50%;
-  transform: rotate(-22deg);
-  animation: tourne 30s linear infinite;
+
+/* Le libelle n'apparait QU'UNE fois, pose en bas du disque. */
+.sphere__libelle {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  z-index: 2;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 0 var(--s3) 13%;
+  pointer-events: none;
 }
 .sphere__nom {
-  position: relative; z-index: 2;
   font: 600 15px/20px -apple-system, system-ui, sans-serif;
-  text-align: center; padding: 0 var(--s3);
-  text-shadow: 0 2px 14px rgba(9,11,29,.95), 0 0 3px rgba(9,11,29,.9);
+  text-align: center;
+  text-shadow: 0 2px 14px rgba(9,11,29,.98), 0 0 3px rgba(9,11,29,.9);
 }
 .sphere__sous {
-  position: relative; z-index: 2;
-  font: var(--f-meta); color: var(--texte-doux); margin-top: 2px;
-  text-shadow: 0 1px 8px rgba(9,11,29,.95);
+  font: var(--f-meta); color: var(--texte-doux); text-align: center;
+  text-shadow: 0 1px 8px rgba(9,11,29,.98);
 }
+.sphere--compacte { border-radius: 50%; }
 
 /* ---------- Titres ---------- */
 
@@ -246,7 +206,7 @@ button { font: inherit; color: inherit; }
 .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; filter: none; }
 .btn--petit { min-height: var(--cible); padding: var(--s2) var(--s4); font-size: 14px; width: auto; }
 
-/* ---------- Choix (THE CROSSROADS) ---------- */
+/* ---------- Choix ---------- */
 
 .choix {
   position: relative; width: 100%; text-align: left;
@@ -275,7 +235,6 @@ button { font: inherit; color: inherit; }
   display: block; margin-bottom: 2px;
 }
 .choix__hint { font: var(--f-meta); color: var(--texte-doux); display: block; }
-.choix:not(:disabled):hover { border-color: rgba(117,221,235,.5); }
 .choix--verrou {
   cursor: not-allowed; opacity: .58;
   background: rgba(15,17,42,.6);
@@ -329,7 +288,7 @@ button { font: inherit; color: inherit; }
 .entree__titre { font: 600 15px/21px -apple-system, system-ui, sans-serif; margin: 2px 0; }
 .entree__detail { font: var(--f-ui); color: var(--texte-doux); }
 
-/* ---------- En-tête de scène ---------- */
+/* ---------- En-tete de scene ---------- */
 
 .lieu {
   display: inline-flex; align-items: center; gap: var(--s2);
@@ -348,7 +307,7 @@ button { font: inherit; color: inherit; }
   to   { opacity: 1; transform: none; }
 }
 
-/* ---------- Objets interactifs (ENTER THE WORLD) ---------- */
+/* ---------- Objets interactifs ---------- */
 
 .objets { display: flex; flex-wrap: wrap; gap: var(--s2); margin: var(--s4) 0 var(--s6); }
 .objet {
@@ -404,10 +363,10 @@ button { font: inherit; color: inherit; }
   background: rgba(9,11,29,.72); color: var(--texte); font: var(--f-ui);
 }
 
-/* ---------- États vides / erreur / chargement ---------- */
+/* ---------- Etats vides / erreur / chargement ---------- */
 
 .etat { text-align: center; padding: var(--s8) var(--s5); }
-.etat__sphère {
+.etat__sphere {
   width: 132px; height: 132px; margin: 0 auto var(--s5);
   border-radius: 50%;
   border: 1px dashed rgba(199,185,255,.34);
@@ -475,7 +434,6 @@ button { font: inherit; color: inherit; }
 .grille-univers {
   display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s4);
 }
-.grille-univers .sphere { aspect-ratio: 1; }
 
 .tableau { width: 100%; border-collapse: collapse; font: var(--f-ui); }
 .tableau th, .tableau td {
@@ -546,3 +504,19 @@ button { font: inherit; color: inherit; }
 .visuel__texte { position: absolute; left: var(--s4); bottom: var(--s3); z-index: 2; }
 .visuel__titre { font: 600 18px/24px -apple-system, system-ui, sans-serif; }
 .visuel__sous { font: var(--f-meta); color: var(--lavande); }
+
+/* ---------- Topbar (ecrans profonds) ---------- */
+
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  padding: calc(var(--sa-haut) + var(--s3)) var(--s4) var(--s3);
+  background: linear-gradient(180deg, rgba(9,11,29,.94) 62%, rgba(9,11,29,.55) 100%);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border-bottom: 1px solid rgba(199,185,255,.08);
+  display: flex; align-items: center; gap: var(--s3);
+}
+.topbar__title {
+  font: 600 17px/22px -apple-system, "SF Pro Display", system-ui, sans-serif;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
