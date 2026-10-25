@@ -4,14 +4,15 @@
    bouton n'est decoratif : chaque `data-act` a une entree dans
    le tableau d'actions ci-dessous.
 
-   CORRECTIFS APPLIQUES
-   P1 : THE CROSSROADS recoit l'etat de la branche active (contexte)
-        et le journal correspondant. Jouer dans une branche fait
-        desormais avancer CETTE branche.
-   P2 : un objectif deja inscrit au journal n'y est plus rejoue
-        (marqueur `objectifsJournalises` porte par l'etat).
-   P3 : import unique de atlas.js ; `nommerParametres` non utilise
-        a ete retire.
+   ETAPE 1 -- correctifs
+   P1 : THE CROSSROADS recoit l'etat de la branche active.
+   P2 : un objectif deja inscrit n'est plus rejoue.
+   P3 : imports nettoyes.
+
+   ETAPE 4 -- creatures
+   Une creature est une rencontre : ouvrir sa fiche applique son
+   effet a l'etat vivant et l'ecrit au journal actif. Revoir une
+   creature ne gonfle ni le journal ni les variables.
    ============================================================ */
 
 import { peindre, lier, h, brut, idCourt } from "./state/dom.js";
@@ -23,13 +24,15 @@ import { ecranCrossroads } from "./ui/screens/crossroads.js";
 import { ecranJournal } from "./ui/screens/journal.js";
 import { ecranAtlas } from "./ui/screens/atlas.js";
 import { modaleRenommer, modaleSupprimer, modaleGerer, modaleFragment, modaleReinitialiser } from "./ui/modales.js";
+import { modaleCreature } from "./ui/fiche-creature.js";
 import { PACKS, brouillonVide, packPourDecor, libelle, ROLES, DECORS, AMBIANCES, DEFIS } from "./data/params.js";
+import { CREATURES, creatureParId, drapeauDe, rencontrer } from "./data/creatures.js";
 import { etatInitial, appliquerChoix } from "./engine/narrative.js";
 import { entree, creerBranche, dupliquer, decrireChangements } from "./engine/journal.js";
 import { objectifAtteint } from "./ui/objectifs.js";
 
 const racine = document.getElementById("app");
-let interfaceLocale = { modale: null, hotspot: null };
+let interfaceLocale = { modale: null, hotspot: null, creature: null };
 
 /* ---------- Etat courant, branche ou lignee principale ---------- */
 
@@ -38,13 +41,11 @@ function brancheActive(univers) {
   return (univers.branches || []).find((b) => b.id === store.etat.brancheId) || null;
 }
 
-/** Journal actif : celui de la branche si l'on joue dans une branche. */
 function journalActifDe(univers) {
   const b = brancheActive(univers);
   return b ? (b.entries || []) : (univers.journal || []);
 }
 
-/** Contexte transmis aux ecrans : etat vivant + journal correspondant. */
 function contexteDe(univers) {
   const b = brancheActive(univers);
   return {
@@ -73,10 +74,10 @@ function rendre() {
   }
 
   const onglets = [
-    ["multiverse", "MR", "Multivers"],
-    ["generator", "CR", "Creer"],
-    ["journal", "JO", "Journal"],
-    ["atlas", "AT", "Atlas"],
+    ["multiverse", "+", "Multivers"],
+    ["generator", "*", "Creer"],
+    ["journal", "=", "Journal"],
+    ["atlas", "o", "Atlas"],
   ].map(([cle, icone, nom]) => h`
     <button data-act="onglet" data-ecran="${cle}" aria-current="${ecran === cle || (cle === "multiverse" && (ecran === "entree" || ecran === "crossroads")) ? "page" : "false"}">
       <span aria-hidden="true">${icone}</span><span>${nom}</span>
@@ -90,7 +91,7 @@ function rendre() {
   peindre(racine, h`${brut(corps)}${brut(barre)}${brut(modale)}`);
 }
 
-/* ---------- Persistance de l'univers actif ---------- */
+/* ---------- Persistance ---------- */
 
 function majUnivers(id, transforme) {
   const index = store.etat.universes.findIndex((u) => u.id === id);
@@ -102,47 +103,52 @@ function majUnivers(id, transforme) {
   return suivant;
 }
 
-/** Ecrit une entree dans le journal actif (univers ou branche). */
 function journaliser(id, uneEntree) {
   majUnivers(id, (u) => {
     if (store.etat.brancheId) {
-      return {
-        ...u,
+      return Object.assign({}, u, {
         branches: u.branches.map((b) =>
-          b.id === store.etat.brancheId ? { ...b, entries: [...b.entries, uneEntree] } : b
+          b.id === store.etat.brancheId ? Object.assign({}, b, { entries: b.entries.concat([uneEntree]) }) : b
         ),
-      };
+      });
     }
-    return { ...u, journal: [...u.journal, uneEntree] };
+    return Object.assign({}, u, { journal: u.journal.concat([uneEntree]) });
   });
 }
 
-/** Etat courant : celui de la branche active, ou de l'univers. */
 function etatCourantDe(univers) {
-  const c = contexteDe(univers);
-  return c.etatCourant;
+  return contexteDe(univers).etatCourant;
 }
 
-/**
- * Remplace l'etat vivant - branche si l'on joue dans une branche,
- * lignee principale sinon.
- */
 function remplacerEtatCourant(id, nouvelEtat) {
   majUnivers(id, (u) => {
     if (store.etat.brancheId) {
-      return {
-        ...u,
-        branches: u.branches.map((b) => b.id === store.etat.brancheId ? { ...b, state: nouvelEtat } : b),
-      };
+      return Object.assign({}, u, {
+        branches: u.branches.map((b) => b.id === store.etat.brancheId ? Object.assign({}, b, { state: nouvelEtat }) : b),
+      });
     }
-    return { ...u, state: nouvelEtat };
+    return Object.assign({}, u, { state: nouvelEtat });
+  });
+}
+
+function ajouterDrapeau(id, drapeau) {
+  const poser = (etatVise) => Object.assign({}, etatVise, {
+    flags: etatVise.flags.indexOf(drapeau) !== -1 ? etatVise.flags : etatVise.flags.concat([drapeau]),
+  });
+  majUnivers(id, (u) => {
+    if (store.etat.brancheId) {
+      return Object.assign({}, u, {
+        branches: u.branches.map((b) =>
+          b.id === store.etat.brancheId ? Object.assign({}, b, { state: poser(b.state) }) : b),
+      });
+    }
+    return Object.assign({}, u, { state: poser(u.state) });
   });
 }
 
 /* ---------- Actions ---------- */
 
 const actions = {
-  /* --- navigation --- */
   onglet(el) { store.aller(el.getAttribute("data-ecran")); },
   retour() { store.aller("multiverse"); },
   "retour-multiverse"() { store.aller("multiverse"); },
@@ -156,8 +162,6 @@ const actions = {
     store.activer(el.getAttribute("data-id"));
     const u = store.universActif();
     const pack = PACKS[u.packId];
-    // Reprise reelle : si l'on a deja depasse l'introduction, on
-    // rouvre la scene enregistree plutot que l'entree.
     const deja = (u.state.visited || []).length > 1 || u.state.sceneId !== (pack ? pack.startSceneId : null);
     store.aller(deja ? "crossroads" : "entree");
   },
@@ -176,7 +180,6 @@ const actions = {
   atlas() { store.aller("atlas"); },
   entree() { store.aller("entree"); },
 
-  /* --- LIFE GENERATOR --- */
   role(el) { majBrouillon({ role: el.getAttribute("data-valeur") }); },
   decor(el) { majBrouillon({ decor: el.getAttribute("data-valeur") }); },
   ambiance(el) { majBrouillon({ ambiance: el.getAttribute("data-valeur") }); },
@@ -241,7 +244,7 @@ const actions = {
     store.aller("entree");
   },
 
-  /* --- ENTER THE WORLD --- */
+  /* --- objets --- */
   fragment(el) {
     const nom = el.getAttribute("data-nom") || el.textContent.trim();
     const univers = store.universActif();
@@ -260,21 +263,31 @@ const actions = {
         detail: (objet && objet.detail) || "",
         sceneId: courant.sceneId,
       }));
-      const cle = "objet:" + hotspot.objet;
-      const ajouter = (etatVise) => ({
-        ...etatVise,
-        flags: etatVise.flags.includes(cle) ? etatVise.flags : etatVise.flags.concat([cle]),
-      });
-      majUnivers(univers.id, (u) => {
-        if (store.etat.brancheId) {
-          return {
-            ...u,
-            branches: u.branches.map((b) =>
-              b.id === store.etat.brancheId ? { ...b, state: ajouter(b.state) } : b),
-          };
-        }
-        return { ...u, state: ajouter(u.state) };
-      });
+      ajouterDrapeau(univers.id, "objet:" + hotspot.objet);
+    }
+    rendre();
+  },
+
+  /* --- creature : rencontre --- */
+  creature(el) {
+    const id = el.getAttribute("data-creature");
+    const creature = creatureParId(id);
+    if (!creature) return;
+    const univers = store.universActif();
+    if (!univers) return;
+
+    const courant = etatCourantDe(univers);
+    const dejaVue = courant.flags.indexOf(drapeauDe(creature)) !== -1;
+
+    interfaceLocale.modale = modaleCreature(creature, dejaVue);
+
+    if (!dejaVue) {
+      const apres = rencontrer(courant, creature);
+      remplacerEtatCourant(univers.id, apres);
+      journaliser(univers.id, entree("item", "Creature rencontree : " + creature.nom, {
+        detail: creature.titre + " / " + creature.role,
+        sceneId: courant.sceneId,
+      }));
     }
     rendre();
   },
@@ -295,8 +308,6 @@ const actions = {
     const objets = resultat.objets;
     if (resultat.avertissement) store.signaler(resultat.avertissement);
 
-    // P2 : les objectifs deja inscrits au journal sont memorises
-    // dans l'etat, pour ne pas y etre rejoues a chaque passage.
     const dejaInscrits = suivant.objectifsJournalises || [];
     const nouveaux = [];
     for (const o of (pack.objectifs || [])) {
@@ -304,10 +315,9 @@ const actions = {
       if (dejaInscrits.indexOf(o.id) !== -1) continue;
       nouveaux.push(o);
     }
-    const etatFinal = {
-      ...suivant,
+    const etatFinal = Object.assign({}, suivant, {
       objectifsJournalises: dejaInscrits.concat(nouveaux.map((o) => o.id)),
-    };
+    });
 
     remplacerEtatCourant(univers.id, etatFinal);
 
@@ -317,15 +327,15 @@ const actions = {
       choix.hint ? "Enjeu : " + choix.hint : "",
     ].filter(Boolean).join(" - ");
 
-    journaliser(univers.id, {
-      ...entree("choice", choix.label, {
+    journaliser(univers.id, Object.assign(
+      entree("choice", choix.label, {
         detail: detail,
         sceneId: etatFinal.sceneId,
         changements: changements,
         objets: objets,
       }),
-      etatApres: etatFinal,
-    });
+      { etatApres: etatFinal }
+    ));
 
     for (const o of nouveaux) {
       journaliser(univers.id, entree("goal", "Objectif atteint : " + o.nom, {
@@ -344,9 +354,8 @@ const actions = {
     store.aller("crossroads");
   },
 
-  rien() { /* choix verrouille : aucun effet, la raison est deja affichee */ },
+  rien() { /* choix verrouille : aucun effet */ },
 
-  /* --- Journal / branches --- */
   "branche-depuis"(el) {
     const univers = store.universActif();
     const pack = PACKS[univers.packId];
@@ -385,8 +394,7 @@ const actions = {
   recommencer() {
     const univers = store.universActif();
     const pack = PACKS[univers.packId];
-    majUnivers(univers.id, (u) => ({
-      ...u,
+    majUnivers(univers.id, (u) => Object.assign({}, u, {
       state: etatInitial(pack, u.params),
       journal: u.journal.concat([entree("scene", "Univers recommence", {
         detail: "Nouvelle lignee principale, branches conservees.",
@@ -397,7 +405,6 @@ const actions = {
     store.aller("entree");
   },
 
-  /* --- Gestion d'univers --- */
   volumes() { interfaceLocale.modale = modaleGerer(store.universActif()); rendre(); },
   "gerer-dupliquer"(el) {
     const id = el.getAttribute("data-id");
@@ -425,7 +432,7 @@ const actions = {
     const champ = racine.querySelector('[data-act-input="nom-modale"]');
     const nom = ((champ && champ.value) || "").trim();
     if (!nom) { store.signaler("Le nom ne peut pas etre vide."); return; }
-    majUnivers(id, (u) => ({ ...u, name: nom }));
+    majUnivers(id, (u) => Object.assign({}, u, { name: nom }));
     interfaceLocale.modale = null;
     store.notifier();
   },
@@ -452,11 +459,10 @@ const actions = {
     store.reinitialiserTout();
   },
 
-  /* --- THE ATLAS --- */
   "atlas-choisir"(el) {
     const id = el.getAttribute("data-id");
     const s = store.etat.atlasSelection || [];
-    const neuve = s.includes(id) ? s.filter((x) => x !== id) : s.concat([id]).slice(-2);
+    const neuve = s.indexOf(id) !== -1 ? s.filter((x) => x !== id) : s.concat([id]).slice(-2);
     store.etat.atlasSelection = neuve;
     store.notifier();
   },
@@ -477,7 +483,6 @@ const actions = {
     rendre();
   },
 
-  /* --- Modales --- */
   "fermer-modale"() { interfaceLocale.modale = null; rendre(); },
   "fermer-voile"(el) {
     if (el === el.target || el.getAttribute("data-act") === "fermer-modale") {
@@ -494,8 +499,6 @@ function majBrouillon(partiel) {
   store.definirBrouillonGenerateur(b);
 }
 
-/* ---------- Saisies ---------- */
-
 const saisies = {
   nom: (el) => majBrouillon({ nom: el.value }),
   libreRole: (el) => majBrouillon({ libreRole: el.value }),
@@ -504,8 +507,6 @@ const saisies = {
   libre: () => {},
   "nom-modale": () => {},
 };
-
-/* ---------- Demarrage ---------- */
 
 lier(racine, actions);
 racine.addEventListener("input", (e) => {
@@ -517,7 +518,6 @@ racine.addEventListener("input", (e) => {
 });
 store.sAbonner(rendre);
 
-// Un rechargement doit retrouver exactement la meme scene.
 window.addEventListener("pagehide", () => store.persister());
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") store.persister();
