@@ -1,0 +1,389 @@
+/* ============================================================
+   PARALLEL ME - Mondes animes
+   Chaque sphere est une scene : plusieurs couches tournent a des
+   vitesses differentes, avec astres, silhouettes, objets et
+   creatures qui derivent. Tout est en CSS, aucune image.
+   ============================================================ */
+
+.monde {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  display: block;
+  animation: monde-respire 11s ease-in-out infinite alternate;
+}
+@keyframes monde-respire {
+  from { transform: scale(1); }
+  to   { transform: scale(1.045); }
+}
+
+/* ---------- Ciels ---------- */
+
+.m-ciel {
+  position: absolute; inset: -10%;
+  background:
+    radial-gradient(circle at 68% 24%, rgba(102,84,232,.55), transparent 52%),
+    radial-gradient(circle at 22% 78%, rgba(117,221,235,.34), transparent 56%),
+    radial-gradient(circle at 50% 50%, #11142e, #070918 78%);
+}
+.m-ciel--chaud {
+  background:
+    radial-gradient(circle at 30% 22%, rgba(242,155,191,.48), transparent 54%),
+    radial-gradient(circle at 76% 74%, rgba(199,185,255,.34), transparent 58%),
+    radial-gradient(circle at 50% 50%, #1a1430, #080818 78%);
+}
+
+/* ---------- Astres ---------- */
+
+.m-astre {
+  position: absolute; border-radius: 50%;
+  background: radial-gradient(circle at 34% 32%, #fff, var(--cyan) 42%, transparent 72%);
+}
+.m-astre--loin {
+  width: 16%; height: 16%; left: 66%; top: 16%;
+  opacity: .62;
+  animation: astre-pulse 6.5s ease-in-out infinite alternate;
+}
+.m-astre--proche {
+  width: 24%; height: 24%; left: 18%; top: 58%;
+  background: radial-gradient(circle at 34% 32%, #fff, var(--rose) 46%, transparent 74%);
+  opacity: .5;
+  animation: astre-pulse 9s ease-in-out infinite alternate -2s;
+}
+@keyframes astre-pulse {
+  from { transform: scale(.88); opacity: .35; }
+  to   { transform: scale(1.12); opacity: .72; }
+}
+
+/* ---------- Planete qui tourne ---------- */
+
+.m-planete {
+  position: absolute;
+  width: 46%; height: 46%;
+  left: 50%; top: 62%;
+  margin-left: -23%; margin-top: -23%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #9fe8f4, #2a5fb8 56%, #101a3c 88%);
+  box-shadow: inset -6px -8px 18px rgba(9,11,29,.9), 0 0 22px rgba(117,221,235,.35);
+  overflow: hidden;
+  animation: planete-derive 18s ease-in-out infinite alternate;
+}
+.m-planete__trame {
+  position: absolute; inset: -60%;
+  background:
+    repeating-linear-gradient(115deg, rgba(255,255,255,.18) 0 7px, transparent 7px 22px),
+    repeating-linear-gradient(70deg, rgba(255,255,255,.10) 0 5px, transparent 5px 28px);
+  animation: planete-tourne 34s linear infinite;
+}
+@keyframes planete-tourne { to { transform: rotate(360deg); } }
+@keyframes planete-derive {
+  from { transform: translate3d(-2%, 1%, 0); }
+  to   { transform: translate3d(3%, -2%, 0); }
+}
+
+/* ---------- Anneau de station ---------- */
+
+.m-anneau {
+  position: absolute;
+  width: 128%; height: 30%;
+  left: -14%; top: 40%;
+  border: 3px solid rgba(199,185,255,.75);
+  border-left-color: rgba(117,221,235,.9);
+  border-right-color: rgba(242,155,191,.75);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(117,221,235,.5), inset 0 0 10px rgba(199,185,255,.35);
+  animation: anneau-tourne 24s linear infinite;
+}
+.m-anneau--fin { border-width: 2px; opacity: .8; }
+@keyframes anneau-tourne { to { transform: rotate(360deg); } }
+
+/* ---------- Astronaute en orbite ---------- */
+
+.m-orbite {
+  position: absolute;
+  width: 62%; height: 62%;
+  left: 19%; top: 19%;
+  animation: orbite-tourne 26s linear infinite;
+}
+.m-orbite--eva { animation-duration: 30s; }
+@keyframes orbite-tourne { to { transform: rotate(360deg); } }
+
+.m-filin {
+  position: absolute; left: 50%; top: 0;
+  width: 1px; height: 50%;
+  background: linear-gradient(180deg, transparent, rgba(199,185,255,.7));
+}
+.m-eva {
+  position: absolute;
+  left: 50%; top: -6px; margin-left: -4px;
+  width: 8px; height: 11px;
+  border-radius: 40% 40% 30% 30%;
+  background: linear-gradient(180deg, #fff, var(--lavande));
+  box-shadow: 0 0 8px rgba(199,185,255,.9);
+  animation: eva-scintille 2.4s ease-in-out infinite alternate;
+}
+@keyframes eva-scintille { from { opacity: .72; } to { opacity: 1; } }
+
+/* ---------- Station ---------- */
+
+.m-station {
+  position: absolute;
+  width: 34%; height: 20%;
+  left: 8%; top: 18%;
+  border-radius: 46% 46% 22% 22%;
+  background: linear-gradient(180deg, rgba(237,235,255,.9), rgba(120,116,180,.75));
+  box-shadow: inset 0 -3px 6px rgba(9,11,29,.7), 0 0 14px rgba(199,185,255,.4);
+  animation: station-flotte 13s ease-in-out infinite alternate;
+}
+@keyframes station-flotte {
+  from { transform: translate3d(0, 0, 0) rotate(-1.5deg); }
+  to   { transform: translate3d(3%, -4%, 0) rotate(1.5deg); }
+}
+
+/* ---------- Alertes et lanternes ---------- */
+
+.m-alerte {
+  position: absolute;
+  width: 7%; height: 7%;
+  left: 30%; top: 44%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffd48a, #e88b1f 70%);
+  animation: alerte-clignote 1.9s steps(1, end) infinite;
+}
+@keyframes alerte-clignote {
+  0%, 46%  { opacity: 1; box-shadow: 0 0 14px #f0a534; }
+  47%, 100%{ opacity: .22; box-shadow: none; }
+}
+
+.m-lanterne {
+  position: absolute;
+  width: 5%; height: 5%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff, var(--teinte) 68%);
+  animation: lanterne-bat 3.4s ease-in-out infinite;
+}
+.m-lanterne--hublot { left: 14%; top: 24%; }
+.m-lanterne--lampe  { left: 62%; top: 58%; }
+.m-lanterne--tour   { left: 40%; top: 28%; }
+.m-lanterne--place  { left: 70%; top: 46%; }
+@keyframes lanterne-bat {
+  0%, 100% { opacity: .3; transform: scale(.8); }
+  50%      { opacity: 1;  transform: scale(1.15); }
+}
+
+/* ---------- Creature : corps, ailes, oeil ---------- */
+
+.m-creature {
+  position: absolute;
+  width: 20%; height: 9%;
+  animation: creature-derive 17s ease-in-out infinite alternate;
+}
+.m-corps {
+  position: absolute; inset: 22% 6%;
+  border-radius: 50%;
+  background: linear-gradient(120deg, var(--teinte), transparent 92%);
+  opacity: .82;
+}
+.m-aile {
+  position: absolute; top: 0;
+  width: 30%; height: 100%;
+  border-radius: 60% 20% 60% 20%;
+  background: var(--teinte);
+  opacity: .46;
+}
+.m-aile--g { left: -18%; transform-origin: right center; animation: aile-bat 1.7s ease-in-out infinite alternate; }
+.m-aile--d { right: -18%; transform-origin: left center;  animation: aile-bat 1.7s ease-in-out infinite alternate -0.85s; }
+@keyframes aile-bat {
+  from { transform: rotate(-16deg) scaleY(.82); }
+  to   { transform: rotate(16deg)  scaleY(1.1); }
+}
+.m-oeil {
+  position: absolute; left: 58%; top: 38%;
+  width: 4px; height: 4px; border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px #fff;
+}
+
+.m-creature--vide   { left: 6%;  top: 40%; width: 26%; animation-duration: 21s; }
+.m-creature--chat   { left: 52%; top: 72%; width: 24%; height: 8%; animation: creature-sommeil 7s ease-in-out infinite alternate; }
+.m-creature--oiseau { left: 60%; top: 14%; width: 18%; height: 7%; animation-duration: 9s; }
+.m-creature--ailee  { left: 12%; top: 22%; width: 28%; height: 10%; animation-duration: 14s; }
+
+@keyframes creature-derive {
+  from { transform: translate3d(0, 0, 0) rotate(-6deg); }
+  to   { transform: translate3d(26%, -10%, 0) rotate(7deg); }
+}
+@keyframes creature-sommeil {
+  from { transform: scaleY(.94) translateY(0); }
+  to   { transform: scaleY(1.06) translateY(-3%); }
+}
+
+/* ---------- Fantomes ---------- */
+
+.m-fantome {
+  position: absolute;
+  width: 13%; height: 20%;
+  animation: fantome-flotte 8s ease-in-out infinite alternate;
+}
+.m-spectre {
+  position: absolute; inset: 0;
+  border-radius: 50% 50% 42% 42%;
+  background: linear-gradient(180deg, rgba(237,235,255,.72), rgba(199,185,255,.12));
+  filter: blur(2.4px);
+}
+.m-yeux {
+  position: absolute; left: 0; right: 0; top: 34%;
+  display: flex; justify-content: center; gap: 4px;
+}
+.m-yeux i {
+  width: 3px; height: 5px; border-radius: 50%;
+  background: #0b0d20;
+  animation: yeux-clignent 5.5s steps(1, end) infinite;
+}
+@keyframes yeux-clignent {
+  0%, 88%  { opacity: 1; }
+  89%, 96% { opacity: 0; }
+  97%, 100%{ opacity: 1; }
+}
+@keyframes fantome-flotte {
+  from { transform: translate3d(0, 0, 0) rotate(-2deg); opacity: .68; }
+  to   { transform: translate3d(-14%, -22%, 0) rotate(3deg); opacity: .95; }
+}
+.m-fantome--module  { left: 62%; top: 26%; }
+.m-fantome--atelier { left: 26%; top: 46%; animation-duration: 10s; }
+.m-fantome--pont    { left: 20%; top: 58%; width: 10%; height: 16%; animation-duration: 7s; }
+
+/* ---------- Atelier ---------- */
+
+.m-fenetre {
+  position: absolute; inset: 8% 12% 46% 46%;
+  border: 2px solid rgba(199,185,255,.55);
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(117,221,235,.16), rgba(242,155,191,.10));
+  box-shadow: inset 0 0 16px rgba(199,185,255,.3);
+}
+.m-nuage {
+  position: absolute;
+  width: 22%; height: 7%;
+  border-radius: 50%;
+  background: rgba(237,235,255,.34);
+  filter: blur(3px);
+}
+.m-nuage--1 { left: -20%; top: 20%; animation: nuage-traverse 15s linear infinite; }
+.m-nuage--2 { left: -20%; top: 30%; animation: nuage-traverse 21s linear infinite -7s; }
+@keyframes nuage-traverse {
+  from { transform: translateX(0); opacity: 0; }
+  12%  { opacity: .8; }
+  88%  { opacity: .8; }
+  to   { transform: translateX(560%); opacity: 0; }
+}
+
+.m-toiles {
+  position: absolute; inset: 62% 8% 6% 8%;
+  border-radius: 6px;
+  background:
+    linear-gradient(96deg, rgba(242,155,191,.5) 0 22%, transparent 22%),
+    linear-gradient(84deg, transparent 0 34%, rgba(199,185,255,.42) 34% 58%, transparent 58%),
+    linear-gradient(92deg, transparent 0 68%, rgba(237,235,255,.32) 68% 100%);
+  animation: toiles-bougent 12s ease-in-out infinite alternate;
+}
+@keyframes toiles-bougent {
+  from { transform: skewX(-2deg) translateY(0); }
+  to   { transform: skewX(2deg) translateY(-3%); }
+}
+
+.m-feuille {
+  position: absolute;
+  width: 6%; height: 8%;
+  border-radius: 40% 60% 40% 60%;
+  background: linear-gradient(160deg, rgba(237,235,255,.85), rgba(199,185,255,.4));
+}
+.m-feuille--1 { left: 30%; top: 70%; animation: feuille-monte 11s linear infinite; }
+.m-feuille--2 { left: 44%; top: 78%; animation: feuille-monte 14s linear infinite -4s; }
+.m-feuille--3 { left: 58%; top: 74%; animation: feuille-monte 17s linear infinite -9s; }
+@keyframes feuille-monte {
+  0%   { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
+  10%  { opacity: .9; }
+  50%  { transform: translate3d(14%, -46%, 0) rotate(180deg); }
+  90%  { opacity: .9; }
+  100% { transform: translate3d(-10%, -92%, 0) rotate(380deg); opacity: 0; }
+}
+
+.m-pigment {
+  position: absolute;
+  width: 12%; height: 12%;
+  left: 24%; top: 62%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, #ffe1ee, var(--rose) 62%, transparent 78%);
+  animation: pigment-bat 4.6s ease-in-out infinite;
+}
+@keyframes pigment-bat {
+  0%, 100% { transform: scale(.86); box-shadow: 0 0 8px rgba(242,155,191,.6); }
+  50%      { transform: scale(1.14); box-shadow: 0 0 22px rgba(242,155,191,.95); }
+}
+
+/* ---------- Cartographes ---------- */
+
+.m-cite {
+  position: absolute;
+  width: 84%; height: 34%;
+  left: 8%; top: 34%;
+  border-radius: 10px 10px 4px 4px;
+  background:
+    linear-gradient(78deg, transparent 0 12%, rgba(199,185,255,.55) 12% 20%, transparent 20%),
+    linear-gradient(102deg, transparent 0 30%, rgba(237,235,255,.42) 30% 38%, transparent 38%),
+    linear-gradient(88deg, transparent 0 54%, rgba(199,185,255,.5) 54% 64%, transparent 64%),
+    linear-gradient(94deg, transparent 0 74%, rgba(237,235,255,.38) 74% 84%, transparent 84%),
+    linear-gradient(180deg, rgba(120,116,180,.55), rgba(21,24,58,.8));
+  box-shadow: 0 0 18px rgba(199,185,255,.34);
+  animation: cite-flotte 16s ease-in-out infinite alternate;
+}
+.m-cite--fin { width: 76%; height: 26%; left: 12%; top: 38%; }
+@keyframes cite-flotte {
+  from { transform: translate3d(0, 3%, 0); }
+  to   { transform: translate3d(0, -4%, 0); }
+}
+
+.m-veilleuses {
+  position: absolute;
+  left: 12%; right: 12%; top: 68%;
+  height: 6%;
+  background: radial-gradient(circle, rgba(117,221,235,.95) 0 18%, transparent 22%) repeat-x;
+  background-size: 16% 100%;
+  animation: veilleuses-vague 3.2s ease-in-out infinite alternate;
+}
+@keyframes veilleuses-vague {
+  from { opacity: .45; transform: scaleY(.86); }
+  to   { opacity: 1;   transform: scaleY(1.12); }
+}
+
+.m-brule {
+  position: absolute;
+  left: 14%; right: 14%; bottom: 6%;
+  height: 16%;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(60,40,44,.85), rgba(20,12,16,.95));
+  box-shadow: 0 0 14px rgba(242,155,191,.22);
+  animation: brule-fume 9s ease-in-out infinite alternate;
+}
+@keyframes brule-fume {
+  from { opacity: .8; filter: blur(.6px); }
+  to   { opacity: 1;  filter: blur(1.4px); }
+}
+
+.m-instruments {
+  position: absolute;
+  width: 26%; height: 14%;
+  left: 66%; top: 62%;
+  border-radius: 50%;
+  border: 1px solid rgba(199,185,255,.6);
+  box-shadow: inset 0 0 10px rgba(199,185,255,.3);
+  animation: instruments-tourne 19s linear infinite;
+}
+@keyframes instruments-tourne { to { transform: rotate(360deg); } }
+
+/* ---------- Mouvement reduit ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .monde, .monde * { animation: none !important; }
+}

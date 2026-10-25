@@ -1,20 +1,14 @@
 /* ============================================================
    ECRAN 1 - YOUR MULTIVERSE
-   Planete centrale, univers crees, raccourci de reprise, bouton
-   de creation. Les spheres contiennent une illustration de monde
-   miniature (assets/mondes/), et le titre n'apparait qu'une fois.
+   Chaque sphere est un MONDE ANIME : astres, station, creatures,
+   fantomes, objets qui derivent. Aucune image binaire, donc tout
+   se met a jour par simple poussee de texte.
    ============================================================ */
 
 import { h, esc, brut } from "../../state/dom.js";
 import { PACKS } from "../../data/params.js";
 import { quand } from "../../state/dom.js";
-
-/** Illustration de monde, une par pack. */
-const MONDES = {
-  space: "assets/mondes/orbite-basse.jpg",
-  studio: "assets/mondes/atelier-4h.jpg",
-  atlas: "assets/mondes/cartographes.jpg",
-};
+import { mondeAnime } from "./mondes.js";
 
 function sphere(u, pack, options) {
   const p = pack ? pack.palette : { core: "#6654E8", accent: "#F29BBF", glow: "rgba(102,84,232,.14)" };
@@ -22,7 +16,7 @@ function sphere(u, pack, options) {
   const titrePack = pack ? pack.title : u.packId;
   const branches = u.branches ? u.branches.length : 0;
   const sous = branches ? titrePack + " - " + branches + " branche(s)" : titrePack;
-  const image = MONDES[u.packId] || MONDES.space;
+
   const libelle = compacte
     ? ""
     : '<span class="sphere__libelle"><span class="sphere__nom">' + esc(u.name) +
@@ -32,7 +26,7 @@ function sphere(u, pack, options) {
     <button class="sphere${compacte ? " sphere--compacte" : ""}" data-act="ouvrir" data-id="${u.id}"
       style="--core:${p.core};--accent:${p.accent};--glow:${p.glow}"
       aria-label="Ouvrir ${u.name}">
-      <img class="sphere__monde-img" src="${image}" alt="" loading="lazy" decoding="async">
+      ${mondeAnime(u.packId, compacte)}
       <span class="sphere__voile" aria-hidden="true"></span>
       ${brut(libelle)}
     </button>`;
@@ -83,11 +77,12 @@ export function ecranMultiverse(etat) {
   const pack = PACKS[dernier.packId];
   const scene = pack ? pack.scenes[dernier.state.sceneId] : null;
   const nomScene = scene ? scene.title : "Scene inconnue";
+
   const reprise = h`
     <section class="glass-card" style="padding:20px;margin-bottom:8px">
       <div class="section-titre" style="margin-top:0">Reprendre</div>
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
-        <div style="flex:0 0 64px">
+        <div style="flex:0 0 68px">
           ${brut(sphere(dernier, pack, { compacte: true }))}
         </div>
         <div style="min-width:0">
