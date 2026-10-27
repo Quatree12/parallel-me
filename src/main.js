@@ -1,18 +1,11 @@
 /* ============================================================
    PARALLEL ME - Point d'entree
-   Assemble les six ecrans, cable les actions, garantit qu'aucun
-   bouton n'est decoratif : chaque `data-act` a une entree dans
-   le tableau d'actions ci-dessous.
+   Assemble les sept ecrans, cable les actions. Chaque `data-act`
+   a une entree dans le tableau d'actions ci-dessous.
 
-   ETAPE 1 -- correctifs
-   P1 : THE CROSSROADS recoit l'etat de la branche active.
-   P2 : un objectif deja inscrit n'est plus rejoue.
-   P3 : imports nettoyes.
-
-   ETAPE 4 -- creatures
-   Une creature est une rencontre : ouvrir sa fiche applique son
-   effet a l'etat vivant et l'ecrit au journal actif. Revoir une
-   creature ne gonfle ni le journal ni les variables.
+   ETAPE 1 -- correctifs P1 (branche), P2 (objectifs), P3 (imports)
+   ETAPE 3 -- galerie des univers visuels + theme applique
+   ETAPE 4 -- creatures du multivers
    ============================================================ */
 
 import { peindre, lier, h, brut, idCourt } from "./state/dom.js";
@@ -23,16 +16,38 @@ import { ecranEntree } from "./ui/screens/entree.js";
 import { ecranCrossroads } from "./ui/screens/crossroads.js";
 import { ecranJournal } from "./ui/screens/journal.js";
 import { ecranAtlas } from "./ui/screens/atlas.js";
+import { ecranUnivers } from "./ui/screens/univers.js";
 import { modaleRenommer, modaleSupprimer, modaleGerer, modaleFragment, modaleReinitialiser } from "./ui/modales.js";
 import { modaleCreature } from "./ui/fiche-creature.js";
 import { PACKS, brouillonVide, packPourDecor, libelle, ROLES, DECORS, AMBIANCES, DEFIS } from "./data/params.js";
 import { CREATURES, creatureParId, drapeauDe, rencontrer } from "./data/creatures.js";
+import { universVisuelParId } from "./data/univers-visuels.js";
 import { etatInitial, appliquerChoix } from "./engine/narrative.js";
 import { entree, creerBranche, dupliquer, decrireChangements } from "./engine/journal.js";
 import { objectifAtteint } from "./ui/objectifs.js";
 
 const racine = document.getElementById("app");
 let interfaceLocale = { modale: null, hotspot: null, creature: null };
+
+/* ---------- Theme visuel ---------- */
+
+/**
+ * Pose la teinte de l'univers choisi sur la coquille. Un theme
+ * n'est qu'une variable CSS : aucune vie, aucune sauvegarde,
+ * aucune scene n'est touchee.
+ */
+function appliquerTheme() {
+  const univers = universVisuelParId(store.etat.universChoisi);
+  const coquille = document.querySelector(".app-shell");
+  if (!coquille) return;
+  if (!univers) {
+    coquille.removeAttribute("data-theme");
+    coquille.style.removeProperty("--theme");
+    return;
+  }
+  coquille.setAttribute("data-theme", univers.id);
+  coquille.style.setProperty("--theme", univers.teinte);
+}
 
 /* ---------- Etat courant, branche ou lignee principale ---------- */
 
@@ -70,11 +85,13 @@ function rendre() {
     case "crossroads":corps = univers ? ecranCrossroads(etat, univers, contexte) : ecranMultiverse(etat); break;
     case "journal":   corps = univers ? ecranJournal(etat, univers) : ecranMultiverse(etat); break;
     case "atlas":     corps = ecranAtlas(etat); break;
+    case "univers":   corps = ecranUnivers(etat); break;
     default:          corps = ecranMultiverse(etat);
   }
 
   const onglets = [
     ["multiverse", "+", "Multivers"],
+    ["univers", "U", "Univers"],
     ["generator", "*", "Creer"],
     ["journal", "=", "Journal"],
     ["atlas", "o", "Atlas"],
@@ -83,12 +100,14 @@ function rendre() {
       <span aria-hidden="true">${icone}</span><span>${nom}</span>
     </button>`).join("");
 
-  const barre = univers || ecran === "multiverse" || ecran === "generator" || ecran === "atlas"
+  const barre = univers || ecran === "multiverse" || ecran === "generator" ||
+    ecran === "atlas" || ecran === "univers"
     ? h`<nav class="barre-onglets" aria-label="Navigation principale">${brut(onglets)}</nav>`
     : "";
 
   const modale = interfaceLocale.modale || "";
   peindre(racine, h`${brut(corps)}${brut(barre)}${brut(modale)}`);
+  appliquerTheme();
 }
 
 /* ---------- Persistance ---------- */
@@ -156,6 +175,10 @@ const actions = {
   nouvelle() {
     store.definirBrouillonGenerateur(brouillonVide());
     store.aller("generator");
+  },
+
+  "univers-choisir"(el) {
+    store.definirUniversChoisi(el.getAttribute("data-univers"));
   },
 
   ouvrir(el) {
@@ -244,7 +267,6 @@ const actions = {
     store.aller("entree");
   },
 
-  /* --- objets --- */
   fragment(el) {
     const nom = el.getAttribute("data-nom") || el.textContent.trim();
     const univers = store.universActif();
@@ -268,7 +290,6 @@ const actions = {
     rendre();
   },
 
-  /* --- creature : rencontre --- */
   creature(el) {
     const id = el.getAttribute("data-creature");
     const creature = creatureParId(id);
@@ -292,7 +313,6 @@ const actions = {
     rendre();
   },
 
-  /* --- THE CROSSROADS --- */
   choisir(el) {
     const univers = store.universActif();
     const pack = PACKS[univers.packId];
