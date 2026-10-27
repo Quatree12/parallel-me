@@ -1,16 +1,50 @@
 /* ============================================================
-   ECRAN 7 - THE UNIVERSES (galerie des univers visuels)
-   Les huit directions artistiques, en galerie. Aucune histoire
-   n'est reecrite : cet ecran presente, et laisse choisir une
-   teinte qui s'applique au reste de l'application.
+   ECRAN 7 - THE UNIVERSES (galerie + bibliotheque visuelle)
+   Les huit directions artistiques, puis les planches annexes
+   presentees ENTIERES. Aucune histoire n'est reecrite : cet ecran
+   presente, et laisse choisir une teinte qui habille le reste de
+   l'application.
 
-   Le visuel vient de la table VISUELS (mondes.js) ; si le fichier
-   manque, une vignette de repli prend sa place.
+   Les planches annexes ne sont pas decoupees : l'application n'a
+   pas de decodeur d'image. Elles sont donc montrees telles quelles,
+   avec leur legende.
    ============================================================ */
 
 import { h, esc, brut } from "../../state/dom.js";
 import { UNIVERS_VISUELS } from "../../data/univers-visuels.js";
 import { mondeAnime } from "./mondes.js";
+
+/**
+ * Planches annexes, telles qu'elles ont ete deposees dans le depot.
+ * Le chemin est relatif a index.html, donc a la racine du site.
+ */
+const PLANCHE_ANNEXES = [
+  {
+    fichier: "09_Creatures_du_multivers.png",
+    titre: "Creatures du multivers",
+    note: "Les sept creatures : Lumi, Zephyr, Nyx, Orion, Pixie, Kai, Bloom. Chacune a sa fiche dans THE CROSSROADS.",
+  },
+  {
+    fichier: "10_Objets_et_artefacts.png",
+    titre: "Objets et artefacts",
+    note: "Les formes qui peuplent les scenes : spheres, eclats, fragments lumineux.",
+  },
+  {
+    fichier: "11_Interfaces_et_elements_UI.png",
+    titre: "Interfaces et elements",
+    note: "La matiere Parallel Glass : surfaces translucides, reflets, boutons.",
+  },
+  {
+    fichier: "12_Fonds_et_ambiances.png",
+    titre: "Fonds et ambiances",
+    note: "Cette planche sert aussi de texture d'ambiance, en transparence derriere l'application.",
+  },
+  {
+    fichier: "13_Icones_et_symboles.png",
+    titre: "Icones et symboles",
+    note: "Le vocabulaire graphique : infini, atome, spirale, lotus.",
+  },
+];
 
 /** Une carte d'univers : visuel, nom, slogan, mots-cles. */
 function carteUnivers(u, actif) {
@@ -23,10 +57,8 @@ function carteUnivers(u, actif) {
       ' data-act="univers-choisir" data-univers="' + esc(u.id) + '"' +
       ' style="--teinte:' + esc(u.teinte) + '"' +
       ' aria-pressed="' + String(Boolean(actif)) + '"' +
-      ' aria-label="Univers ' + esc(u.nom) + ', ' + esc(u.slogan) + '">' +
-      '<span class="univ-carte__visuel">' +
-        mondeAnime(u.id, true) +
-      "</span>" +
+      ' aria-label="Univers ' + esc(u.nom) + ", " + esc(u.slogan) + '">' +
+      '<span class="univ-carte__visuel">' + mondeAnime(u.id, true) + "</span>" +
       '<span class="univ-carte__texte">' +
         '<span class="univ-carte__nom">' + esc(u.nom) + "</span>" +
         '<span class="univ-carte__slogan">' + esc(u.slogan) + "</span>" +
@@ -37,11 +69,26 @@ function carteUnivers(u, actif) {
   );
 }
 
+/** Une planche annexe, montree entiere avec sa legende. */
+function plancheHtml(p) {
+  return (
+    '<div class="biblio-item">' +
+      '<img class="biblio-item__image" src="' + esc(p.fichier) + '" alt="" ' +
+        'loading="lazy" decoding="async">' +
+      '<div class="biblio-item__legende">' +
+        '<div class="biblio-item__titre">' + esc(p.titre) + "</div>" +
+        '<div class="biblio-item__note">' + esc(p.note) + "</div>" +
+      "</div>" +
+    "</div>"
+  );
+}
+
 export function ecranUnivers(etat) {
   const choisi = etat.universChoisi || null;
   const liste = UNIVERS_VISUELS
     .map((u) => carteUnivers(u, u.id === choisi))
     .join("");
+  const planches = PLANCHE_ANNEXES.map(plancheHtml).join("");
 
   const packsActifs = (etat.universes || []).length;
 
@@ -73,6 +120,13 @@ export function ecranUnivers(etat) {
       ${brut(blocChoix)}
 
       <div class="univ-grille">${brut(liste)}</div>
+
+      <h2 class="section-titre">Bibliotheque visuelle</h2>
+      <p class="vide-note" style="margin-bottom:14px">
+        Les planches de reference du projet, telles qu'elles ont ete dessinees.
+        Elles ne sont pas decoupees : l'application les montre entieres.
+      </p>
+      <div class="biblio-liste">${brut(planches)}</div>
 
       <h2 class="section-titre">Ou jouer maintenant</h2>
       <p class="vide-note" style="margin-bottom:12px">${noteJeu}</p>
