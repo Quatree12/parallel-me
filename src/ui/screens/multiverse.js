@@ -1,15 +1,16 @@
 /* ============================================================
    ECRAN 1 - YOUR MULTIVERSE
 
-   Le nom du pack n'est plus repete en sous-titre quand il est
-   identique au nom de l'univers.
+   CORRECTIF DU HTML IMPRIME : la cause etait la conversion
+   `String(objetBrut)`, qui detruisait l'objet et le remplacait par
+   du texte echappe, ensuite reaffiche tel quel. On ne convertit
+   plus JAMAIS un objet brut en chaine : les objets brut() se
+   composent entre eux, et la conversion a lieu une seule fois, a
+   l'insertion finale dans le gabarit.
 
-   AJOUT : un bouton de gestion sur chaque sphere, pour renommer
-   ou supprimer une vie sans passer par THE ATLAS.
-
-   CORRECTIF : la sphere de reprise imprimait son HTML a l'ecran.
-   `sphere()` produit desormais TOUJOURS un objet brut(), que
-   l'appelant insere tel quel, sans second gabarit qui l'echappe.
+   Aussi : le nom du pack n'est plus repete en sous-titre quand il
+   est identique au nom de l'univers, et chaque sphere porte un
+   bouton de gestion (renommer, dupliquer, supprimer).
    ============================================================ */
 
 import { h, esc, brut } from "../../state/dom.js";
@@ -28,47 +29,34 @@ function sousTitre(u, pack) {
   return morceaux.join(" - ");
 }
 
-/**
- * Construit une sphere. Renvoie TOUJOURS un objet brut(), pour que
- * l'appelant puisse l'inserer sans le re-echapper.
- */
+/** Construit une sphere. Renvoie du HTML, jamais un objet brut. */
 function sphere(u, pack, options) {
   const p = pack ? pack.palette : { core: "#6654E8", accent: "#F29BBF", glow: "rgba(102,84,232,.14)" };
   const compacte = options && options.compacte;
   const cle = PACK_VERS_UNIVERS[u.packId] || u.packId;
   const style = "--core:" + p.core + ";--accent:" + p.accent + ";--glow:" + p.glow;
 
-  // mondeAnime() renvoie lui aussi un objet brut() : sa conversion
-  // en chaine donne directement le HTML, non echappe.
-  const monde = String(mondeAnime(cle, Boolean(compacte)));
-
   if (compacte) {
-    return brut(
-      '<button class="sphere sphere--compacte" data-act="ouvrir" data-id="' + esc(u.id) + '"' +
-      ' style="' + style + '" aria-label="Ouvrir ' + esc(u.name) + '">' +
-      monde +
-      "</button>"
-    );
+    return h`<button class="sphere sphere--compacte" data-act="ouvrir" data-id="${u.id}"
+      style="${style}" aria-label="Ouvrir ${u.name}">${mondeAnime(cle, true)}</button>`;
   }
 
   const sous = sousTitre(u, pack);
-  const libelle =
-    '<span class="sphere__libelle"><span class="sphere__nom">' + esc(u.name) + "</span>" +
-    (sous ? '<span class="sphere__sous">' + esc(sous) + "</span>" : "") +
-    "</span>";
+  const sousHtml = sous ? '<span class="sphere__sous">' + esc(sous) + "</span>" : "";
 
-  return brut(
-    '<div class="sphere-bloc">' +
-      '<button class="sphere" data-act="ouvrir" data-id="' + esc(u.id) + '"' +
-      ' style="' + style + '" aria-label="Ouvrir ' + esc(u.name) + '">' +
-        monde +
-        '<span class="sphere__voile" aria-hidden="true"></span>' +
-        libelle +
-      "</button>" +
-      '<button class="sphere__gerer" data-act="volumes-univers" data-id="' + esc(u.id) + '"' +
-      ' aria-label="Gerer ' + esc(u.name) + '">&#8943;</button>' +
-    "</div>"
-  );
+  return h`<div class="sphere-bloc">
+    <button class="sphere" data-act="ouvrir" data-id="${u.id}"
+      style="${style}" aria-label="Ouvrir ${u.name}">
+      ${mondeAnime(cle, false)}
+      <span class="sphere__voile" aria-hidden="true"></span>
+      <span class="sphere__libelle">
+        <span class="sphere__nom">${u.name}</span>
+        ${brut(sousHtml)}
+      </span>
+    </button>
+    <button class="sphere__gerer" data-act="volumes-univers" data-id="${u.id}"
+      aria-label="Gerer ${u.name}">&#8943;</button>
+  </div>`;
 }
 
 export function ecranMultiverse(etat) {
@@ -116,13 +104,12 @@ export function ecranMultiverse(etat) {
   const pack = PACKS[dernier.packId];
   const scene = pack ? pack.scenes[dernier.state.sceneId] : null;
   const nomScene = scene ? scene.title : "Scene inconnue";
-  const vignette = sphere(dernier, pack, { compacte: true });
 
   const reprise = h`
     <section class="glass-card" style="padding:20px;margin-bottom:8px">
       <div class="section-titre" style="margin-top:0">Reprendre</div>
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
-        <div style="flex:0 0 68px">${vignette}</div>
+        <div style="flex:0 0 68px">${sphere(dernier, pack, { compacte: true })}</div>
         <div style="min-width:0">
           <div style="font:600 17px/23px -apple-system,system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${dernier.name}</div>
           <div class="carte-ligne__meta">Scene : ${nomScene} - ${quand(dernier.updatedAt)}</div>
@@ -136,7 +123,7 @@ export function ecranMultiverse(etat) {
     ? h`<div class="bandeau" role="alert"><span aria-hidden="true">!</span><span>Univers sans pack narratif : ${sansPack.join(", ")}. Le reste demeure jouable.</span></div>`
     : "";
 
-  const grille = universes.map((u) => String(sphere(u, PACKS[u.packId]))).join("");
+  const grille = universes.map((u) => sphere(u, PACKS[u.packId])).join("");
 
   return h`
     <div class="ecran">

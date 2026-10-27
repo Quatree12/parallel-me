@@ -1,13 +1,16 @@
 /* ============================================================
-   PARALLEL ME — Micro-couche DOM
-   Volontairement minuscule. Le rendu reconstruit l'arbre de
-   l'écran courant ; les écoutes sont donc posées après coup
-   par `lier`. Aucune dépendance.
+   PARALLEL ME - Micro-couche DOM
+
+   CORRECTIF : `brut()` laisse passer un objet brut() tel quel.
+   Sans cela, composer du HTML deja construit (une sphere
+   imbriquant son monde) obligeait a le convertir en chaine, ce
+   qui l'echappait une seconde fois — le HTML s'imprimait alors
+   a l'ecran au lieu d'etre interprete.
    ============================================================ */
 
-/** Échappe le texte destiné à être inséré dans du HTML. */
+/** Echappe le texte destine a etre insere dans du HTML. */
 export function esc(valeur) {
-  return String(valeur ?? "")
+  return String(valeur === null || valeur === undefined ? "" : valeur)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -15,20 +18,38 @@ export function esc(valeur) {
     .replace(/'/g, "&#39;");
 }
 
-/**
- * Gabarit balisé -> chaîne HTML. Les expressions interpolées sont
- * échappées sauf si elles passent par `brut()`.
- */
 const BRUT = Symbol("brut");
+
+/**
+ * Marque une chaine comme HTML deja sur : elle ne sera pas echappee.
+ * Accepte aussi un objet brut() (ou un tableau de tels objets) et
+ * renvoie un brut equivalent : la composition reste possible de
+ * brut a brut, sans jamais passer par une conversion en chaine.
+ */
 export function brut(html) {
-  return { [BRUT]: true, html: String(html) };
+  if (html && typeof html === "object" && html[BRUT]) return html;
+  if (Array.isArray(html)) {
+    return {
+      [BRUT]: true,
+      html: html.map(function (v) { return (v && v[BRUT]) ? v.html : String(v); }).join(""),
+    };
+  }
+  return { [BRUT]: true, html: String(html === null || html === undefined ? "" : html) };
 }
+
+/** La chaine HTML portee par une valeur, brute ou non. */
+export function texteBrut(valeur) {
+  if (valeur && typeof valeur === "object" && valeur[BRUT]) return valeur.html;
+  return esc(valeur);
+}
+
 function rendre(valeur) {
-  if (valeur == null || valeur === false) return "";
+  if (valeur === null || valeur === undefined || valeur === false) return "";
   if (typeof valeur === "object" && valeur[BRUT]) return valeur.html;
   if (Array.isArray(valeur)) return valeur.map(rendre).join("");
   return esc(valeur);
 }
+
 export function h(gabarit, ...expressions) {
   return gabarit.reduce(
     (sortie, morceau, i) => sortie + morceau + (i < expressions.length ? rendre(expressions[i]) : ""),
@@ -36,19 +57,15 @@ export function h(gabarit, ...expressions) {
   );
 }
 
-/** Écrit le HTML d'un écran. */
+/** Ecrit le HTML d'un ecran. */
 export function peindre(cible, html) {
-  cible.innerHTML = html;
+  cible.innerHTML = String(html);
 }
 
-/**
- * Délégation d'événements. Une seule écoute par rendu, sur des
- * attributs `data-act`. Cela évite d'orchestrer des dizaines
- * d'écoutes et de les oublier lors d'une reconstruction.
- */
+/** Delegation d'evenements, une seule ecoute par rendu. */
 export function lier(racine, table) {
   const gerer = (evenement) => {
-    const porteur = evenement.target.closest?.("[data-act]");
+    const porteur = evenement.target.closest ? evenement.target.closest("[data-act]") : null;
     if (!porteur || !racine.contains(porteur)) return;
     const nom = porteur.getAttribute("data-act");
     const action = table[nom];
@@ -58,13 +75,13 @@ export function lier(racine, table) {
   };
   racine.addEventListener("click", gerer);
   racine.addEventListener("input", (e) => {
-    const porteur = e.target.closest?.("[data-act-input]");
+    const porteur = e.target.closest ? e.target.closest("[data-act-input]") : null;
     if (!porteur || !racine.contains(porteur)) return;
     const action = table[porteur.getAttribute("data-act-input")];
     if (action) action(porteur, e);
   });
   racine.addEventListener("change", (e) => {
-    const porteur = e.target.closest?.("[data-act-change]");
+    const porteur = e.target.closest ? e.target.closest("[data-act-change]") : null;
     if (!porteur || !racine.contains(porteur)) return;
     const action = table[porteur.getAttribute("data-act-change")];
     if (action) action(porteur, e);
@@ -75,18 +92,17 @@ export function lier(racine, table) {
 /** Identifiants courts, lisibles dans les journaux. */
 export function idCourt(prefixe) {
   const alea = Math.random().toString(36).slice(2, 6);
-  return `${prefixe}_${Date.now()}_${alea}`;
+  return prefixe + "_" + Date.now() + "_" + alea;
 }
 
-/** Datation lisible en français, sans dépendance externe. */
+/** Datation lisible en francais, sans dependance externe. */
 export function quand(horodatage) {
   const d = new Date(horodatage);
-  const maintenant = Date.now();
-  const ecart = maintenant - horodatage;
-  if (ecart < 60_000) return "à l'instant";
-  if (ecart < 3_600_000) return `il y a ${Math.floor(ecart / 60_000)} min`;
-  if (ecart < 86_400_000) return `il y a ${Math.floor(ecart / 3_600_000)} h`;
+  const ecart = Date.now() - horodatage;
+  if (ecart < 60000) return "a l'instant";
+  if (ecart < 3600000) return "il y a " + Math.floor(ecart / 60000) + " min";
+  if (ecart < 86400000) return "il y a " + Math.floor(ecart / 3600000) + " h";
   const jour = d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
   const heure = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-  return `${jour} · ${heure}`;
+  return jour + " - " + heure;
 }
