@@ -1,9 +1,8 @@
 /* ============================================================
-   PARALLEL ME - Mondes animes (SVG)
-   Les scenes sont dessinees en SVG. Ici, on ne fait que les
-   ANIMER, par calques, a des vitesses differentes (parallaxe).
-   Toutes les animations n'utilisent que opacity et transform :
-   compatible Safari iOS, aucune fonction CSS exotique.
+   PARALLEL ME - Visuels des mondes (fichiers deposes)
+   L'image occupe tout le disque ; le repli SVG prend sa place si
+   le chargement echoue. Un lent zoom alternatif garde l'ensemble
+   vivant, et se coupe sous prefers-reduced-motion.
    ============================================================ */
 
 .monde {
@@ -13,10 +12,29 @@
   display: block;
   background: radial-gradient(circle at 50% 50%, #11142e, #070918 78%);
 }
-.m-svg {
+
+/* Le visuel : carre, centre, toujours couvrant. */
+.monde__visuel {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
   display: block;
+  animation: monde-zoom 26s ease-in-out infinite alternate;
+}
+@keyframes monde-zoom {
+  from { transform: scale(1); }
+  to   { transform: scale(1.09); }
+}
+
+/* Le repli, s'il est revele par l'echec du chargement. */
+.monde__secours { position: absolute; inset: 0; display: block; }
+.monde__secours .m-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* Scene SVG autonome (aucun visuel prevu pour cet univers). */
+.monde > .m-svg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
   animation: monde-respire 13s ease-in-out infinite alternate;
 }
 @keyframes monde-respire {
@@ -24,136 +42,9 @@
   to   { transform: scale(1.04); }
 }
 
-/* --- Orbite Basse --- */
-
-.m-svg__planete { animation: planete-tourne 26s linear infinite; }
-@keyframes planete-tourne {
-  from { transform: translateX(-1.5%); }
-  to   { transform: translateX(1.5%); }
-}
-
-.m-svg__anneau { animation: anneau-tourne 30s linear infinite; }
-@keyframes anneau-tourne { to { transform: rotate(360deg); } }
-
-.m-svg__module { animation: flotte-douce 11s ease-in-out infinite alternate; }
-@keyframes flotte-douce {
-  from { transform: translate(0, 0); }
-  to   { transform: translate(2px, -3px); }
-}
-
-.m-svg__eva {
-  transform-origin: 50px 44px;
-  animation: eva-orbite 34s linear infinite;
-}
-@keyframes eva-orbite { to { transform: rotate(360deg); } }
-
-.m-svg__baleine { animation: baleine-derive 20s ease-in-out infinite alternate; }
-@keyframes baleine-derive {
-  from { transform: translate(0, 0); }
-  to   { transform: translate(12px, -7px); }
-}
-
-.m-svg__ailee { animation: ailee-derive 15s ease-in-out infinite alternate; }
-@keyframes ailee-derive {
-  from { transform: translate(0, 0) rotate(-4deg); }
-  to   { transform: translate(-9px, 8px) rotate(5deg); }
-}
-
-.m-svg__fantome { animation: fantome-flotte 9s ease-in-out infinite alternate; }
-@keyframes fantome-flotte {
-  from { transform: translate(0, 0); opacity: .55; }
-  to   { transform: translate(-4px, -8px); opacity: 1; }
-}
-
-.m-svg__alerte { animation: alerte-clignote 1.9s steps(1, end) infinite; }
-@keyframes alerte-clignote {
-  0%, 45%  { opacity: 1; }
-  46%, 100%{ opacity: .12; }
-}
-
-/* --- Atelier 4 h --- */
-
-.m-svg__nuages { animation: nuage-passe 16s linear infinite; }
-@keyframes nuage-passe {
-  from { transform: translateX(-14px); opacity: 0; }
-  15%  { opacity: .9; }
-  85%  { opacity: .9; }
-  to   { transform: translateX(14px); opacity: 0; }
-}
-
-.m-svg__toiles { animation: toiles-respire 12s ease-in-out infinite alternate; }
-@keyframes toiles-respire {
-  from { transform: translateY(0) scale(1); }
-  to   { transform: translateY(-1.5px) scale(1.015); }
-}
-
-.m-svg__pigment {
-  transform-origin: 26px 80px;
-  animation: pigment-bat 4.4s ease-in-out infinite;
-}
-@keyframes pigment-bat {
-  0%, 100% { transform: scale(.9); opacity: .8; }
-  50%      { transform: scale(1.18); opacity: 1; }
-}
-
-.m-svg__chat {
-  transform-origin: 66px 84px;
-  animation: chat-respire 6.5s ease-in-out infinite alternate;
-}
-@keyframes chat-respire {
-  from { transform: scaleY(.95); }
-  to   { transform: scaleY(1.07); }
-}
-
-.m-svg__oiseau { animation: oiseau-tourne 18s ease-in-out infinite alternate; }
-@keyframes oiseau-tourne {
-  from { transform: translate(0, 0) rotate(-6deg); }
-  to   { transform: translate(14px, 9px) rotate(7deg); }
-}
-
-.m-svg__feuilles { animation: feuilles-montent 13s linear infinite; }
-@keyframes feuilles-montent {
-  0%   { transform: translateY(6px); opacity: 0; }
-  18%  { opacity: .9; }
-  80%  { opacity: .9; }
-  100% { transform: translateY(-32px); opacity: 0; }
-}
-
-.m-svg__lampe { animation: lampe-bat 3.6s ease-in-out infinite; }
-@keyframes lampe-bat {
-  0%, 100% { opacity: .3; }
-  50%      { opacity: 1; }
-}
-
-/* --- Les Cartographes --- */
-
-.m-svg__cite { animation: cite-flotte 17s ease-in-out infinite alternate; }
-@keyframes cite-flotte {
-  from { transform: translateY(2.5px); }
-  to   { transform: translateY(-3px); }
-}
-
-.m-svg__veilleuses { animation: veilleuses-vague 3.4s ease-in-out infinite alternate; }
-@keyframes veilleuses-vague {
-  from { opacity: .4; }
-  to   { opacity: 1; }
-}
-
-.m-svg__brule { animation: brule-fume 10s ease-in-out infinite alternate; }
-@keyframes brule-fume {
-  from { opacity: .8; }
-  to   { opacity: 1; }
-}
-
-.m-svg__instruments { animation: instruments-tourne 22s linear infinite; }
-@keyframes instruments-tourne { to { transform: rotate(360deg); } }
-
-/* --- Carte de reprise : version reduite --- */
-
-.monde--compacte .m-svg { animation-duration: 16s; }
-
-/* --- Mouvement reduit --- */
+/* Carte de reprise : la vignette reste lisible en petit. */
+.monde--compacte .monde__visuel { animation-duration: 30s; }
 
 @media (prefers-reduced-motion: reduce) {
-  .monde, .monde * { animation: none !important; }
+  .monde__visuel, .monde > .m-svg { animation: none !important; }
 }
