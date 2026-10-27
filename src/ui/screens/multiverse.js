@@ -1,15 +1,19 @@
 /* ============================================================
    ECRAN 1 - YOUR MULTIVERSE
 
-   CORRECTIF FINAL du HTML imprime.
+   CORRECTIF DU HTML IMPRIME - cause enfin identifiee.
 
-   Cause : la branche `compacte` de sphere() retournait un gabarit
-   h`` — donc une CHAINE. Quand multiverse.js reinserait cette
-   chaine dans un second gabarit, `rendre()` l'echappait, et le
-   HTML s'imprimait tel quel.
+   `sphere()` renvoyait un gabarit h``, donc une CHAINE. La
+   vignette etait ensuite interpolee dans le gabarit `reprise`,
+   et `rendre()` — qui n'echappe que les chaines non marquees —
+   l'echappait : le HTML s'imprimait a l'ecran.
 
-   La sphere renvoie desormais un objet brut(), que l'appelant
-   insere via ${...} sans qu'il soit touche.
+   Envelopper le resultat dans brut() ne servait a rien : le mal
+   etait fait AVANT, par le h`` lui-meme.
+
+   La vignette est desormais construite par concatenation, sans
+   passer par un gabarit h`` : la chaine reste du HTML sur, et
+   l'interpolation ne peut plus l'echapper.
    ============================================================ */
 
 import { h, esc, brut } from "../../state/dom.js";
@@ -29,41 +33,44 @@ function sousTitre(u, pack) {
 }
 
 /**
- * Construit une sphere. Renvoie TOUJOURS un objet brut() :
- * la vignette sera reinseree dans un autre gabarit, et une simple
- * chaine y serait echappee.
+ * Sphere compacte (carte de reprise) : concatenation directe.
+ * Aucun gabarit h``, donc aucune chaine a echapper par erreur.
  */
-function sphere(u, pack, options) {
+function sphereCompacte(u, pack) {
   const p = pack ? pack.palette : { core: "#6654E8", accent: "#F29BBF", glow: "rgba(102,84,232,.14)" };
-  const compacte = options && options.compacte;
-  const cle = PACK_VERS_UNIVERS[u.packId] || u.packId;
   const style = "--core:" + p.core + ";--accent:" + p.accent + ";--glow:" + p.glow;
+  const cle = PACK_VERS_UNIVERS[u.packId] || u.packId;
 
-  if (compacte) {
-    return h`<button class="sphere sphere--compacte" data-act="ouvrir" data-id="${u.id}"
-      style="${style}" aria-label="Ouvrir ${u.name}">${mondeAnime(cle, true)}</button>`;
-  }
-
-  const sous = sousTitre(u, pack);
-
-  return h`<div class="sphere-bloc">
-    <button class="sphere" data-act="ouvrir" data-id="${u.id}"
-      style="${style}" aria-label="Ouvrir ${u.name}">
-      ${mondeAnime(cle, false)}
-      <span class="sphere__voile" aria-hidden="true"></span>
-      <span class="sphere__libelle">
-        <span class="sphere__nom">${u.name}</span>
-        <span class="sphere__sous">${sous}</span>
-      </span>
-    </button>
-    <button class="sphere__gerer" data-act="volumes-univers" data-id="${u.id}"
-      aria-label="Gerer ${u.name}">&#8943;</button>
-  </div>`;
+  return brut(
+    '<button class="sphere sphere--compacte" data-act="ouvrir" data-id="' + esc(u.id) + '"' +
+      ' style="' + style + '" aria-label="Ouvrir ' + esc(u.name) + '">' +
+      mondeAnime(cle, true) +
+    "</button>"
+  );
 }
 
-/** Etiquette de la vignette de reprise, deja marquee comme HTML sur. */
-function vignetteReprise(u, pack) {
-  return brut(sphere(u, pack, { compacte: true }));
+/** Sphere complete : visuel, libelle, et bouton de gestion. */
+function sphereComplete(u, pack) {
+  const p = pack ? pack.palette : { core: "#6654E8", accent: "#F29BBF", glow: "rgba(102,84,232,.14)" };
+  const cle = PACK_VERS_UNIVERS[u.packId] || u.packId;
+  const style = "--core:" + p.core + ";--accent:" + p.accent + ";--glow:" + p.glow;
+  const sous = sousTitre(u, pack);
+
+  return brut(
+    '<div class="sphere-bloc">' +
+      '<button class="sphere" data-act="ouvrir" data-id="' + esc(u.id) + '"' +
+        ' style="' + style + '" aria-label="Ouvrir ' + esc(u.name) + '">' +
+        mondeAnime(cle, false) +
+        '<span class="sphere__voile" aria-hidden="true"></span>' +
+        '<span class="sphere__libelle">' +
+          '<span class="sphere__nom">' + esc(u.name) + "</span>" +
+          (sous ? '<span class="sphere__sous">' + esc(sous) + "</span>" : "") +
+        "</span>" +
+      "</button>" +
+      '<button class="sphere__gerer" data-act="volumes-univers" data-id="' + esc(u.id) + '"' +
+      ' aria-label="Gerer ' + esc(u.name) + '">&#8943;</button>' +
+    "</div>"
+  );
 }
 
 export function ecranMultiverse(etat) {
@@ -111,7 +118,10 @@ export function ecranMultiverse(etat) {
   const pack = PACKS[dernier.packId];
   const scene = pack ? pack.scenes[dernier.state.sceneId] : null;
   const nomScene = scene ? scene.title : "Scene inconnue";
-  const vignette = vignetteReprise(dernier, pack);
+
+  // La vignette est un objet brut() : l'interpolation de `reprise`
+  // le reconnait et le laisse passer intact.
+  const vignette = sphereCompacte(dernier, pack);
 
   const reprise = h`
     <section class="glass-card" style="padding:20px;margin-bottom:8px">
@@ -131,7 +141,7 @@ export function ecranMultiverse(etat) {
     ? h`<div class="bandeau" role="alert"><span aria-hidden="true">!</span><span>Univers sans pack narratif : ${sansPack.join(", ")}. Le reste demeure jouable.</span></div>`
     : "";
 
-  const grille = universes.map((u) => sphere(u, PACKS[u.packId])).join("");
+  const grille = universes.map((u) => sphereComplete(u, PACKS[u.packId]));
 
   return h`
     <div class="ecran">
