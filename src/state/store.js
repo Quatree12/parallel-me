@@ -1,8 +1,12 @@
 /* ============================================================
-   PARALLEL ME — Store observable
-   ~70 lignes. L'état complet est sérialisable tel quel : pas de
-   Map, pas de Set, pas de fonction. C'est ce qui rend la
+   PARALLEL ME - Store observable
+   L'etat complet est serialisable tel quel. C'est ce qui rend la
    sauvegarde et la comparaison triviales.
+
+   Ajout : `universChoisi`, le theme visuel actif. Ce champ vit
+   HORS de `universes` : c'est un habillage, pas une partie
+   sauvegardee, et il ne touche donc jamais au moteur narratif ni
+   a la persistance des vies alternatives.
    ============================================================ */
 
 import * as storage from "../data/storage.js";
@@ -10,14 +14,16 @@ import * as storage from "../data/storage.js";
 const abonnes = new Set();
 
 export const etat = {
-  pret: false,            // lecture initiale terminée
-  erreurStockage: null,   // message à afficher en bandeau
-  corrompu: false,        // JSON illisible -> proposer réinitialisation
-  ecran: "multiverse",    // multiverse | generator | entree | crossroads | journal | atlas
+  pret: false,
+  erreurStockage: null,
+  corrompu: false,
+  ecran: "multiverse",
   universes: [],
   actifId: null,
-  brancheId: null,        // null = lignée principale
-  generateur: null,       // brouillon du LIFE GENERATOR
+  brancheId: null,
+  generateur: null,
+  universChoisi: null,
+  atlasSelection: [],
 };
 
 export function sAbonner(fn) {
@@ -27,24 +33,21 @@ export function sAbonner(fn) {
 
 export function notifier() {
   for (const fn of abonnes) {
-    try { fn(); } catch (e) { console.error("[PARALLEL ME] abonné en échec", e); }
+    try { fn(); } catch (e) { console.error("[PARALLEL ME] abonne en echec", e); }
   }
 }
 
-/** Charge depuis le stockage et publie. Appelé une fois au démarrage. */
 export function amorcer() {
   const res = storage.charger();
   etat.universes = res.universes.filter(Boolean);
   etat.erreurStockage = res.erreur || null;
   etat.corrompu = Boolean(res.corrompu);
   etat.pret = true;
-  // Reprise : l'univers le plus récemment touché (§3.2).
-  const dernier = [...etat.universes].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+  const dernier = etat.universes.slice().sort((a, b) => b.updatedAt - a.updatedAt)[0];
   etat.actifId = dernier ? dernier.id : null;
   notifier();
 }
 
-/** Écrit sur disque et publie. Centralisé : aucune mutation ne saute la sauvegarde. */
 export function persister() {
   const res = storage.sauver(etat.universes);
   if (!res.ok && res.erreur && etat.erreurStockage !== res.erreur) {
@@ -63,7 +66,6 @@ export function brancheActive() {
   return u.branches.find((b) => b.id === etat.brancheId) || null;
 }
 
-/** Sélectionne un univers et rouvre exactement où il a été laissé (§T7). */
 export function activer(id) {
   etat.actifId = id;
   etat.brancheId = null;
@@ -85,9 +87,15 @@ export function viderErreurStockage() {
   notifier();
 }
 
-export function signaler(erreur, corrompu = false) {
+export function signaler(erreur, corrompu) {
   etat.erreurStockage = erreur;
-  etat.corrompu = corrompu;
+  etat.corrompu = Boolean(corrompu);
+  notifier();
+}
+
+/** Theme visuel : un habillage, jamais persiste avec les vies. Toucher l'univers actif le desactive. */
+export function definirUniversChoisi(id) {
+  etat.universChoisi = (etat.universChoisi === id) ? null : id;
   notifier();
 }
 
@@ -97,6 +105,6 @@ export function reinitialiserTout() {
   etat.actifId = null;
   etat.brancheId = null;
   etat.corrompu = false;
-  etat.erreurStockage = res.ok ? "Multivers réinitialisé." : `Réinitialisation impossible : ${res.erreur}`;
+  etat.erreurStockage = res.ok ? "Multivers reinitialise." : "Reinitialisation impossible : " + res.erreur;
   notifier();
 }
