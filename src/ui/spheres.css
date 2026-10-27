@@ -1,0 +1,32 @@
+/* ============================================================
+   PARALLEL ME - Bouton de gestion sur les spheres
+   Le bouton a trois points ouvre la modale de gestion (renommer,
+   dupliquer, recommencer, supprimer) sans quitter le multivers.
+   ============================================================ */
+
+.sphere-bloc {
+  position: relative;
+  display: block;
+}
+
+.sphere__gerer {
+  position: absolute;
+  top: 6px; right: 6px;
+  z-index: 3;
+  width: 32px; height: 32px;
+  min-width: 32px; min-height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(199,185,255,.30);
+  background: rgba(9,11,29,.74);
+  color: var(--lavande);
+  font-size: 16px; line-height: 1;
+  cursor: pointer;
+  transition: background 180ms var(--courbe), transform 160ms var(--courbe);
+}
+.sphere__gerer:active { transform: scale(.90); }
+
+/* La cible tactile reste confortable meme si le glyphe est petit. */
+@media (min-width: 400px) {
+  .sphere__gerer { width: 36px; height: 36px; min-width: 36px; min-height: 36px; }
+}

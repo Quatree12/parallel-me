@@ -1,13 +1,12 @@
 /* ============================================================
    ECRAN 1 - YOUR MULTIVERSE
-   Chaque sphere affiche le VISUEL de son univers quand il existe,
-   et retombe sur la scene SVG sinon. Le rattachement pack vers
-   univers se fait dans data/univers-visuels.js.
 
-   CORRECTIF D'AFFICHAGE : le nom du pack n'est plus repete en
-   sous-titre quand il est identique au nom de l'univers (cas
-   courant : un univers cree depuis un pack predefini porte son
-   titre). On affiche alors le nombre de branches, ou rien.
+   Le nom du pack n'est plus repete en sous-titre quand il est
+   identique au nom de l'univers.
+
+   AJOUT : un bouton de gestion sur chaque sphere. Supprimer une
+   vie ne demande plus de passer par THE ATLAS — l'action ouvre la
+   meme modale de gestion, avec la meme confirmation explicite.
    ============================================================ */
 
 import { h, esc, brut } from "../../state/dom.js";
@@ -20,35 +19,46 @@ import { mondeAnime } from "./mondes.js";
 function sousTitre(u, pack) {
   const titrePack = pack ? pack.title : u.packId;
   const branches = u.branches ? u.branches.length : 0;
-  const memeNom = titrePack === u.name;
-
   const morceaux = [];
-  if (!memeNom) morceaux.push(titrePack);
+  if (titrePack !== u.name) morceaux.push(titrePack);
   if (branches > 0) morceaux.push(branches + " branche(s)");
-
   return morceaux.join(" - ");
 }
 
 function sphere(u, pack, options) {
   const p = pack ? pack.palette : { core: "#6654E8", accent: "#F29BBF", glow: "rgba(102,84,232,.14)" };
   const compacte = options && options.compacte;
-  const sous = sousTitre(u, pack);
-
-  const libelle = compacte
-    ? ""
-    : '<span class="sphere__libelle"><span class="sphere__nom">' + esc(u.name) +
-      '</span>' + (sous ? '<span class="sphere__sous">' + esc(sous) + "</span>" : "") + "</span>";
-
   const cle = PACK_VERS_UNIVERS[u.packId] || u.packId;
 
+  if (compacte) {
+    return h`
+      <button class="sphere sphere--compacte" data-act="ouvrir" data-id="${u.id}"
+        style="--core:${p.core};--accent:${p.accent};--glow:${p.glow}"
+        aria-label="Ouvrir ${u.name}">
+        ${mondeAnime(cle, true)}
+      </button>`;
+  }
+
+  const sous = sousTitre(u, pack);
+  const sousHtml = sous
+    ? '<span class="sphere__sous">' + esc(sous) + "</span>"
+    : "";
+
   return h`
-    <button class="sphere${compacte ? " sphere--compacte" : ""}" data-act="ouvrir" data-id="${u.id}"
-      style="--core:${p.core};--accent:${p.accent};--glow:${p.glow}"
-      aria-label="Ouvrir ${u.name}">
-      ${mondeAnime(cle, compacte)}
-      <span class="sphere__voile" aria-hidden="true"></span>
-      ${brut(libelle)}
-    </button>`;
+    <div class="sphere-bloc">
+      <button class="sphere" data-act="ouvrir" data-id="${u.id}"
+        style="--core:${p.core};--accent:${p.accent};--glow:${p.glow}"
+        aria-label="Ouvrir ${u.name}">
+        ${mondeAnime(cle, false)}
+        <span class="sphere__voile" aria-hidden="true"></span>
+        <span class="sphere__libelle">
+          <span class="sphere__nom">${u.name}</span>
+          ${brut(sousHtml)}
+        </span>
+      </button>
+      <button class="sphere__gerer" data-act="volumes-univers" data-id="${u.id}"
+        aria-label="Gerer ${u.name}">&#8943;</button>
+    </div>`;
 }
 
 export function ecranMultiverse(etat) {
@@ -89,7 +99,7 @@ export function ecranMultiverse(etat) {
           <p class="etat__texte">Creez-en une pour commencer.</p>
         </div>
         <button class="btn" data-act="nouvelle">Creer ma premiere vie</button>
-        ${etat.corrompu ? brut(`<button class="btn btn--discret" style="margin-top:12px" data-act="reinit">Reinitialiser le multivers</button>`) : ""}
+        ${etat.corrompu ? brut('<button class="btn btn--discret" style="margin-top:12px" data-act="reinit">Reinitialiser le multivers</button>') : ""}
       </div>`;
   }
 
@@ -102,7 +112,7 @@ export function ecranMultiverse(etat) {
       <div class="section-titre" style="margin-top:0">Reprendre</div>
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
         <div style="flex:0 0 68px">
-          ${brut(sphere(dernier, pack, { compacte: true }))}
+          ${sphere(dernier, pack, { compacte: true })}
         </div>
         <div style="min-width:0">
           <div style="font:600 17px/23px -apple-system,system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${dernier.name}</div>
@@ -128,6 +138,9 @@ export function ecranMultiverse(etat) {
       ${brut(reprise)}
 
       <h2 class="section-titre">Tous les univers</h2>
+      <p class="vide-note" style="margin-bottom:12px">
+        Touchez une sphere pour jouer. Le bouton a trois points permet de renommer ou de supprimer une vie.
+      </p>
       <div class="grille-univers">${brut(grille)}</div>
 
       <div style="margin-top:28px">
