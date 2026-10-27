@@ -1,22 +1,17 @@
 /* ============================================================
    ECRAN 1 - YOUR MULTIVERSE
 
-   CORRECTIF DU HTML IMPRIME - cause enfin identifiee.
+   CORRECTIF DU [object Object]
 
-   `sphere()` renvoyait un gabarit h``, donc une CHAINE. La
-   vignette etait ensuite interpolee dans le gabarit `reprise`,
-   et `rendre()` — qui n'echappe que les chaines non marquees —
-   l'echappait : le HTML s'imprimait a l'ecran.
+   `mondeAnime()` renvoie un OBJET brut(), pas une chaine. Le
+   concatenner avec `+` declenchait String(objet) => "[object
+   Object]". Il faut extraire la chaine portee par l'objet.
 
-   Envelopper le resultat dans brut() ne servait a rien : le mal
-   etait fait AVANT, par le h`` lui-meme.
-
-   La vignette est desormais construite par concatenation, sans
-   passer par un gabarit h`` : la chaine reste du HTML sur, et
-   l'interpolation ne peut plus l'echapper.
+   On passe donc partout par `texteBrut()`, qui rend la chaine HTML
+   que l'objet transporte.
    ============================================================ */
 
-import { h, esc, brut } from "../../state/dom.js";
+import { h, esc, brut, texteBrut } from "../../state/dom.js";
 import { PACKS } from "../../data/params.js";
 import { quand } from "../../state/dom.js";
 import { PACK_VERS_UNIVERS } from "../../data/univers-visuels.js";
@@ -32,19 +27,21 @@ function sousTitre(u, pack) {
   return morceaux.join(" - ");
 }
 
-/**
- * Sphere compacte (carte de reprise) : concatenation directe.
- * Aucun gabarit h``, donc aucune chaine a echapper par erreur.
- */
+/** Le monde d'un univers, sous forme de chaine HTML. */
+function mondeDe(u, compacte) {
+  const cle = PACK_VERS_UNIVERS[u.packId] || u.packId;
+  return texteBrut(mondeAnime(cle, compacte));
+}
+
+/** Sphere compacte (carte de reprise). */
 function sphereCompacte(u, pack) {
   const p = pack ? pack.palette : { core: "#6654E8", accent: "#F29BBF", glow: "rgba(102,84,232,.14)" };
   const style = "--core:" + p.core + ";--accent:" + p.accent + ";--glow:" + p.glow;
-  const cle = PACK_VERS_UNIVERS[u.packId] || u.packId;
 
   return brut(
     '<button class="sphere sphere--compacte" data-act="ouvrir" data-id="' + esc(u.id) + '"' +
       ' style="' + style + '" aria-label="Ouvrir ' + esc(u.name) + '">' +
-      mondeAnime(cle, true) +
+      mondeDe(u, true) +
     "</button>"
   );
 }
@@ -52,7 +49,6 @@ function sphereCompacte(u, pack) {
 /** Sphere complete : visuel, libelle, et bouton de gestion. */
 function sphereComplete(u, pack) {
   const p = pack ? pack.palette : { core: "#6654E8", accent: "#F29BBF", glow: "rgba(102,84,232,.14)" };
-  const cle = PACK_VERS_UNIVERS[u.packId] || u.packId;
   const style = "--core:" + p.core + ";--accent:" + p.accent + ";--glow:" + p.glow;
   const sous = sousTitre(u, pack);
 
@@ -60,7 +56,7 @@ function sphereComplete(u, pack) {
     '<div class="sphere-bloc">' +
       '<button class="sphere" data-act="ouvrir" data-id="' + esc(u.id) + '"' +
         ' style="' + style + '" aria-label="Ouvrir ' + esc(u.name) + '">' +
-        mondeAnime(cle, false) +
+        mondeDe(u, false) +
         '<span class="sphere__voile" aria-hidden="true"></span>' +
         '<span class="sphere__libelle">' +
           '<span class="sphere__nom">' + esc(u.name) + "</span>" +
@@ -119,9 +115,7 @@ export function ecranMultiverse(etat) {
   const scene = pack ? pack.scenes[dernier.state.sceneId] : null;
   const nomScene = scene ? scene.title : "Scene inconnue";
 
-  // La vignette est un objet brut() : l'interpolation de `reprise`
-  // le reconnait et le laisse passer intact.
-  const vignette = sphereCompacte(dernier, pack);
+  const vignette = texteBrut(sphereCompacte(dernier, pack));
 
   const reprise = h`
     <section class="glass-card" style="padding:20px;margin-bottom:8px">
@@ -141,7 +135,7 @@ export function ecranMultiverse(etat) {
     ? h`<div class="bandeau" role="alert"><span aria-hidden="true">!</span><span>Univers sans pack narratif : ${sansPack.join(", ")}. Le reste demeure jouable.</span></div>`
     : "";
 
-  const grille = universes.map((u) => sphereComplete(u, PACKS[u.packId]));
+  const grille = universes.map((u) => texteBrut(sphereComplete(u, PACKS[u.packId]))).join("");
 
   return h`
     <div class="ecran">
