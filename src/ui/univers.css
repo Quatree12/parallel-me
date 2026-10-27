@@ -25,10 +25,10 @@
 }
 .univ-carte:active { transform: scale(.98); }
 
-/* Univers actif : bord teinte et halo. */
+/* Univers actif : bord teinte et halo sobre. */
 .univ-carte--actif {
   border-color: var(--teinte);
-  box-shadow: 0 0 20px rgba(199,185,255,.28);
+  box-shadow: 0 0 18px rgba(199,185,255,.22);
 }
 
 .univ-carte__visuel {
@@ -78,6 +78,40 @@
   border-radius: var(--r-plein);
   background: rgba(9,11,29,.78);
   border: 1px solid var(--teinte);
+}
+
+/* ---------- Bibliotheque visuelle ----------
+   Les planches annexes, presentees ENTIERES. Elles documentent la
+   direction artistique ; elles ne sont pas decoupees, faute de
+   decodeur d'image cote application. */
+
+.biblio-liste {
+  display: flex; flex-direction: column; gap: var(--s4);
+}
+
+.biblio-item {
+  border-radius: var(--r-l);
+  border: 1px solid var(--verre-bord-2);
+  background: linear-gradient(180deg, rgba(21,24,58,.7), rgba(9,11,29,.88));
+  overflow: hidden;
+}
+
+.biblio-item__image {
+  display: block; width: 100%;
+  background: #0a0c1c;
+}
+
+.biblio-item__legende {
+  padding: var(--s3) var(--s4) var(--s4);
+}
+.biblio-item__titre {
+  font: 600 15px/20px -apple-system, system-ui, sans-serif;
+  color: var(--texte);
+}
+.biblio-item__note {
+  font: 500 12px/17px -apple-system, system-ui, sans-serif;
+  color: var(--texte-doux);
+  margin-top: 3px;
 }
 
 @media (max-width: 360px) {
