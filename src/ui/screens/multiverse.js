@@ -1,14 +1,14 @@
 /* ============================================================
    ECRAN 1 - YOUR MULTIVERSE
    Chaque sphere affiche le VISUEL de son univers quand il existe,
-   et retombe sur la scene SVG sinon. Le rattachement pack ->
+   et retombe sur la scene SVG sinon. Le rattachement pack vers
    univers se fait dans data/univers-visuels.js.
    ============================================================ */
 
 import { h, esc, brut } from "../../state/dom.js";
 import { PACKS } from "../../data/params.js";
 import { quand } from "../../state/dom.js";
-import { PACK_TO_VERS_UNIVERS } from "../../data/univers-visuels.js";
+import { PACK_VERS_UNIVERS } from "../../data/univers-visuels.js";
 import { mondeAnime } from "./mondes.js";
 
 function sphere(u, pack, options) {
@@ -23,9 +23,9 @@ function sphere(u, pack, options) {
     : '<span class="sphere__libelle"><span class="sphere__nom">' + esc(u.name) +
       '</span><span class="sphere__sous">' + esc(sous) + "</span></span>";
 
-  // On demande le visuel de l'univers rattache a ce pack ;
-  // mondeAnime() gere lui-meme l'absence de fichier.
-  const cle = PACK_TO_VERS_UNIVERS[u.packId] || u.packId;
+  // Visuel de l'univers rattache a ce pack ; mondeAnime() gere
+  // lui-meme l'absence de fichier, avec repli SVG.
+  const cle = PACK_VERS_UNIVERS[u.packId] || u.packId;
 
   return h`
     <button class="sphere${compacte ? " sphere--compacte" : ""}" data-act="ouvrir" data-id="${u.id}"
