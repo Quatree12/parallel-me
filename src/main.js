@@ -1,12 +1,8 @@
 /* ============================================================
    PARALLEL ME - Point d'entree
-   Assemble les sept ecrans, cable les actions. Chaque `data-act`
-   a une entree dans le tableau d'actions ci-dessous.
 
-   ETAPE 1 -- correctifs P1 (branche), P2 (objectifs), P3 (imports)
-   ETAPE 3 -- galerie des univers visuels + theme applique
-   ETAPE 4 -- creatures du multivers
-   AJOUT   -- gestion d'une vie directement depuis sa sphere
+   `brancherReplis` est appele apres chaque rendu : si un visuel
+   ne se charge pas, la scene de repli prend sa place.
    ============================================================ */
 
 import { peindre, lier, h, brut, idCourt } from "./state/dom.js";
@@ -18,6 +14,7 @@ import { ecranCrossroads } from "./ui/screens/crossroads.js";
 import { ecranJournal } from "./ui/screens/journal.js";
 import { ecranAtlas } from "./ui/screens/atlas.js";
 import { ecranUnivers } from "./ui/screens/univers.js";
+import { brancherReplis } from "./ui/screens/mondes.js";
 import { modaleRenommer, modaleSupprimer, modaleGerer, modaleFragment, modaleReinitialiser } from "./ui/modales.js";
 import { modaleCreature } from "./ui/fiche-creature.js";
 import { PACKS, brouillonVide, packPourDecor, libelle, ROLES, DECORS, AMBIANCES, DEFIS } from "./data/params.js";
@@ -96,14 +93,14 @@ function rendre() {
       <span aria-hidden="true">${icone}</span><span>${nom}</span>
     </button>`).join("");
 
-  const barre = univers || ecran === "multiverse" || ecran === "generator" ||
-    ecran === "atlas" || ecran === "univers"
+  const barre = univers || ecran === "multiverse" || ecran === "generator" || ecran === "atlas" || ecran === "univers"
     ? h`<nav class="barre-onglets" aria-label="Navigation principale">${brut(onglets)}</nav>`
     : "";
 
   const modale = interfaceLocale.modale || "";
   peindre(racine, h`${brut(corps)}${brut(barre)}${brut(modale)}`);
   appliquerTheme();
+  brancherReplis(racine);
 }
 
 /* ---------- Persistance ---------- */
@@ -177,11 +174,6 @@ const actions = {
     store.definirUniversChoisi(el.getAttribute("data-univers"));
   },
 
-  /**
-   * Gestion d'une vie depuis sa sphere : ouvre la meme modale que
-   * THE ATLAS, avec renommer, dupliquer, recommencer et supprimer.
-   * La suppression demande toujours une confirmation explicite.
-   */
   "volumes-univers"(el) {
     const id = el.getAttribute("data-id");
     const u = store.etat.universes.find((x) => x.id === id);

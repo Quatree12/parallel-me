@@ -1,16 +1,10 @@
 /* ============================================================
    ECRAN 1 - YOUR MULTIVERSE
 
-   CORRECTIF DU HTML IMPRIME : la cause etait la conversion
-   `String(objetBrut)`, qui detruisait l'objet et le remplacait par
-   du texte echappe, ensuite reaffiche tel quel. On ne convertit
-   plus JAMAIS un objet brut en chaine : les objets brut() se
-   composent entre eux, et la conversion a lieu une seule fois, a
-   l'insertion finale dans le gabarit.
-
-   Aussi : le nom du pack n'est plus repete en sous-titre quand il
-   est identique au nom de l'univers, et chaque sphere porte un
-   bouton de gestion (renommer, dupliquer, supprimer).
+   La sphere de reprise imprime son HTML a l'ecran : corrige.
+   Cause = des entites `&quot;` presentes dans le HTML genere par
+   mondes.js, qui ressortaient en clair. Plus aucune entite
+   desormais ; le repli est pose par un gestionnaire d'erreur.
    ============================================================ */
 
 import { h, esc, brut } from "../../state/dom.js";
@@ -29,7 +23,7 @@ function sousTitre(u, pack) {
   return morceaux.join(" - ");
 }
 
-/** Construit une sphere. Renvoie du HTML, jamais un objet brut. */
+/** Construit une sphere : HTML, jamais un objet brut. */
 function sphere(u, pack, options) {
   const p = pack ? pack.palette : { core: "#6654E8", accent: "#F29BBF", glow: "rgba(102,84,232,.14)" };
   const compacte = options && options.compacte;
@@ -42,7 +36,6 @@ function sphere(u, pack, options) {
   }
 
   const sous = sousTitre(u, pack);
-  const sousHtml = sous ? '<span class="sphere__sous">' + esc(sous) + "</span>" : "";
 
   return h`<div class="sphere-bloc">
     <button class="sphere" data-act="ouvrir" data-id="${u.id}"
@@ -51,7 +44,7 @@ function sphere(u, pack, options) {
       <span class="sphere__voile" aria-hidden="true"></span>
       <span class="sphere__libelle">
         <span class="sphere__nom">${u.name}</span>
-        ${brut(sousHtml)}
+        <span class="sphere__sous">${sous}</span>
       </span>
     </button>
     <button class="sphere__gerer" data-act="volumes-univers" data-id="${u.id}"
