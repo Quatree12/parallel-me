@@ -1,12 +1,15 @@
 /* ============================================================
    ECRAN 1 - YOUR MULTIVERSE
 
-   Le visuel vient de visuels-mondes.js (module renomme pour
-   contourner un cache tenace de Safari sur les modules ES).
+   CORRECTIF FINAL du HTML imprime.
 
-   Le nom du pack n'est plus repete en sous-titre quand il est
-   identique au nom de l'univers, et chaque sphere porte un bouton
-   de gestion (renommer, dupliquer, supprimer).
+   Cause : la branche `compacte` de sphere() retournait un gabarit
+   h`` — donc une CHAINE. Quand multiverse.js reinserait cette
+   chaine dans un second gabarit, `rendre()` l'echappait, et le
+   HTML s'imprimait tel quel.
+
+   La sphere renvoie desormais un objet brut(), que l'appelant
+   insere via ${...} sans qu'il soit touche.
    ============================================================ */
 
 import { h, esc, brut } from "../../state/dom.js";
@@ -25,7 +28,11 @@ function sousTitre(u, pack) {
   return morceaux.join(" - ");
 }
 
-/** Construit une sphere : renvoie du HTML, jamais un objet brut. */
+/**
+ * Construit une sphere. Renvoie TOUJOURS un objet brut() :
+ * la vignette sera reinseree dans un autre gabarit, et une simple
+ * chaine y serait echappee.
+ */
 function sphere(u, pack, options) {
   const p = pack ? pack.palette : { core: "#6654E8", accent: "#F29BBF", glow: "rgba(102,84,232,.14)" };
   const compacte = options && options.compacte;
@@ -52,6 +59,11 @@ function sphere(u, pack, options) {
     <button class="sphere__gerer" data-act="volumes-univers" data-id="${u.id}"
       aria-label="Gerer ${u.name}">&#8943;</button>
   </div>`;
+}
+
+/** Etiquette de la vignette de reprise, deja marquee comme HTML sur. */
+function vignetteReprise(u, pack) {
+  return brut(sphere(u, pack, { compacte: true }));
 }
 
 export function ecranMultiverse(etat) {
@@ -99,12 +111,13 @@ export function ecranMultiverse(etat) {
   const pack = PACKS[dernier.packId];
   const scene = pack ? pack.scenes[dernier.state.sceneId] : null;
   const nomScene = scene ? scene.title : "Scene inconnue";
+  const vignette = vignetteReprise(dernier, pack);
 
   const reprise = h`
     <section class="glass-card" style="padding:20px;margin-bottom:8px">
       <div class="section-titre" style="margin-top:0">Reprendre</div>
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
-        <div style="flex:0 0 68px">${sphere(dernier, pack, { compacte: true })}</div>
+        <div style="flex:0 0 68px">${vignette}</div>
         <div style="min-width:0">
           <div style="font:600 17px/23px -apple-system,system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${dernier.name}</div>
           <div class="carte-ligne__meta">Scene : ${nomScene} - ${quand(dernier.updatedAt)}</div>
