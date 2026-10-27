@@ -1,8 +1,12 @@
 /* ============================================================
    PARALLEL ME - Ambiance de fond
    La planche de fonds est une mosaique : on ne la montre jamais
-   entiere. Elle sert de TEXTURE, en couverture, sous un voile
-   opaque qui preserve la lisibilite du texte.
+   entiere. Elle sert de TEXTURE, sous un voile tres opaque qui
+   preserve la lisibilite du texte.
+
+   Opacite abaissee de 18 % a 7 % et flou porte a 6 px : a 18 %,
+   les slogans graves dans la planche restaient lisibles derriere
+   les cartes, ce qui faisait du bruit plutot qu'une texture.
    ============================================================ */
 
 .app-shell[data-ambiance="true"]::after {
@@ -14,16 +18,15 @@
   background-image: url("../../12_Fonds_et_ambiances.png");
   background-size: cover;
   background-position: center;
-  opacity: .18;
-  filter: blur(2px) saturate(120%);
+  opacity: .07;
+  filter: blur(6px) saturate(115%);
   mix-blend-mode: screen;
 }
 
-/* Sur petit ecran, on allege la texture : moins de pixels a peindre. */
 @media (max-width: 380px) {
-  .app-shell[data-ambiance="true"]::after { opacity: .13; filter: blur(3px); }
+  .app-shell[data-ambiance="true"]::after { opacity: .05; filter: blur(7px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .app-shell[data-ambiance="true"]::after { filter: none; }
+  .app-shell[data-ambiance="true"]::after { filter: blur(6px); }
 }

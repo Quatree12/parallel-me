@@ -3,6 +3,11 @@
    Chaque sphere affiche le VISUEL de son univers quand il existe,
    et retombe sur la scene SVG sinon. Le rattachement pack vers
    univers se fait dans data/univers-visuels.js.
+
+   CORRECTIF D'AFFICHAGE : le nom du pack n'est plus repete en
+   sous-titre quand il est identique au nom de l'univers (cas
+   courant : un univers cree depuis un pack predefini porte son
+   titre). On affiche alors le nombre de branches, ou rien.
    ============================================================ */
 
 import { h, esc, brut } from "../../state/dom.js";
@@ -11,20 +16,29 @@ import { quand } from "../../state/dom.js";
 import { PACK_VERS_UNIVERS } from "../../data/univers-visuels.js";
 import { mondeAnime } from "./mondes.js";
 
+/** Sous-titre utile : jamais le nom de l'univers repete. */
+function sousTitre(u, pack) {
+  const titrePack = pack ? pack.title : u.packId;
+  const branches = u.branches ? u.branches.length : 0;
+  const memeNom = titrePack === u.name;
+
+  const morceaux = [];
+  if (!memeNom) morceaux.push(titrePack);
+  if (branches > 0) morceaux.push(branches + " branche(s)");
+
+  return morceaux.join(" - ");
+}
+
 function sphere(u, pack, options) {
   const p = pack ? pack.palette : { core: "#6654E8", accent: "#F29BBF", glow: "rgba(102,84,232,.14)" };
   const compacte = options && options.compacte;
-  const titrePack = pack ? pack.title : u.packId;
-  const branches = u.branches ? u.branches.length : 0;
-  const sous = branches ? titrePack + " - " + branches + " branche(s)" : titrePack;
+  const sous = sousTitre(u, pack);
 
   const libelle = compacte
     ? ""
     : '<span class="sphere__libelle"><span class="sphere__nom">' + esc(u.name) +
-      '</span><span class="sphere__sous">' + esc(sous) + "</span></span>";
+      '</span>' + (sous ? '<span class="sphere__sous">' + esc(sous) + "</span>" : "") + "</span>";
 
-  // Visuel de l'univers rattache a ce pack ; mondeAnime() gere
-  // lui-meme l'absence de fichier, avec repli SVG.
   const cle = PACK_VERS_UNIVERS[u.packId] || u.packId;
 
   return h`

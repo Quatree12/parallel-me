@@ -1,8 +1,13 @@
 /* ============================================================
    PARALLEL ME - Visuels des mondes (fichiers deposes)
-   L'image occupe tout le disque ; le repli SVG prend sa place si
-   le chargement echoue. Un lent zoom alternatif garde l'ensemble
-   vivant, et se coupe sous prefers-reduced-motion.
+   L'image occupe tout le disque. Le cadrage est REMONTE a 42 % :
+   les planches d'univers portent leur titre en haut et leurs
+   slogans en bas, l'illustration est legerement au-dessus du
+   centre. object-fit: cover conservait le milieu geometrique et
+   rognait l'essentiel.
+
+   Un lent zoom alternatif garde l'ensemble vivant, et se coupe
+   sous prefers-reduced-motion.
    ============================================================ */
 
 .monde {
@@ -13,11 +18,11 @@
   background: radial-gradient(circle at 50% 50%, #11142e, #070918 78%);
 }
 
-/* Le visuel : carre, centre, toujours couvrant. */
 .monde__visuel {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: cover;
+  object-position: center 42%;
   border-radius: 50%;
   display: block;
   animation: monde-zoom 26s ease-in-out infinite alternate;
@@ -27,11 +32,9 @@
   to   { transform: scale(1.09); }
 }
 
-/* Le repli, s'il est revele par l'echec du chargement. */
 .monde__secours { position: absolute; inset: 0; display: block; }
 .monde__secours .m-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 
-/* Scene SVG autonome (aucun visuel prevu pour cet univers). */
 .monde > .m-svg {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
@@ -42,7 +45,6 @@
   to   { transform: scale(1.04); }
 }
 
-/* Carte de reprise : la vignette reste lisible en petit. */
 .monde--compacte .monde__visuel { animation-duration: 30s; }
 
 @media (prefers-reduced-motion: reduce) {
