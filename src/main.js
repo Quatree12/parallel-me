@@ -6,6 +6,7 @@
    ETAPE 1 -- correctifs P1 (branche), P2 (objectifs), P3 (imports)
    ETAPE 3 -- galerie des univers visuels + theme applique
    ETAPE 4 -- creatures du multivers
+   AJOUT   -- gestion d'une vie directement depuis sa sphere
    ============================================================ */
 
 import { peindre, lier, h, brut, idCourt } from "./state/dom.js";
@@ -31,11 +32,6 @@ let interfaceLocale = { modale: null, hotspot: null, creature: null };
 
 /* ---------- Theme visuel ---------- */
 
-/**
- * Pose la teinte de l'univers choisi sur la coquille. Un theme
- * n'est qu'une variable CSS : aucune vie, aucune sauvegarde,
- * aucune scene n'est touchee.
- */
 function appliquerTheme() {
   const univers = universVisuelParId(store.etat.universChoisi);
   const coquille = document.querySelector(".app-shell");
@@ -179,6 +175,20 @@ const actions = {
 
   "univers-choisir"(el) {
     store.definirUniversChoisi(el.getAttribute("data-univers"));
+  },
+
+  /**
+   * Gestion d'une vie depuis sa sphere : ouvre la meme modale que
+   * THE ATLAS, avec renommer, dupliquer, recommencer et supprimer.
+   * La suppression demande toujours une confirmation explicite.
+   */
+  "volumes-univers"(el) {
+    const id = el.getAttribute("data-id");
+    const u = store.etat.universes.find((x) => x.id === id);
+    if (!u) return;
+    store.etat.actifId = u.id;
+    interfaceLocale.modale = modaleGerer(u);
+    rendre();
   },
 
   ouvrir(el) {
