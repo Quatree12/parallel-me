@@ -1,23 +1,16 @@
 /* ============================================================
    ECRAN 7 - THE UNIVERSES (galerie + bibliotheque visuelle)
-   Les huit directions artistiques, puis les planches annexes
-   presentees ENTIERES. Aucune histoire n'est reecrite : cet ecran
-   presente, et laisse choisir une teinte qui habille le reste de
-   l'application.
 
-   Les planches annexes ne sont pas decoupees : l'application n'a
-   pas de decodeur d'image. Elles sont donc montrees telles quelles,
-   avec leur legende.
+   CORRECTIF : les vignettes passaient par mondeAnime() sans
+   passer par brut(), l'objet se convertissait en texte et
+   affichait « [object Object] ». Le visuel est desormais insere
+   correctement, et le repli SVG reste disponible.
    ============================================================ */
 
 import { h, esc, brut } from "../../state/dom.js";
 import { UNIVERS_VISUELS } from "../../data/univers-visuels.js";
 import { mondeAnime } from "./mondes.js";
 
-/**
- * Planches annexes, telles qu'elles ont ete deposees dans le depot.
- * Le chemin est relatif a index.html, donc a la racine du site.
- */
 const PLANCHE_ANNEXES = [
   {
     fichier: "09_Creatures_du_multivers.png",
@@ -52,21 +45,24 @@ function carteUnivers(u, actif) {
     .map((m) => '<span class="univ-mot">' + esc(m) + "</span>")
     .join("");
 
-  return (
-    '<button class="univ-carte' + (actif ? " univ-carte--actif" : "") + '"' +
-      ' data-act="univers-choisir" data-univers="' + esc(u.id) + '"' +
-      ' style="--teinte:' + esc(u.teinte) + '"' +
-      ' aria-pressed="' + String(Boolean(actif)) + '"' +
-      ' aria-label="Univers ' + esc(u.nom) + ", " + esc(u.slogan) + '">' +
-      '<span class="univ-carte__visuel">' + mondeAnime(u.id, true) + "</span>" +
-      '<span class="univ-carte__texte">' +
-        '<span class="univ-carte__nom">' + esc(u.nom) + "</span>" +
-        '<span class="univ-carte__slogan">' + esc(u.slogan) + "</span>" +
-        '<span class="univ-carte__mots">' + mots + "</span>" +
-      "</span>" +
-      (actif ? '<span class="univ-carte__marque">Theme actif</span>' : "") +
-    "</button>"
-  );
+  // Le visuel est un objet brut() : il DOIT etre insere via brut(),
+  // sinon il s'affiche comme « [object Object] ».
+  const visuel = mondeAnime(u.id, true);
+
+  return h`
+    <button class="univ-carte${actif ? " univ-carte--actif" : ""}"
+      data-act="univers-choisir" data-univers="${u.id}"
+      style="--teinte:${u.teinte}"
+      aria-pressed="${String(Boolean(actif))}"
+      aria-label="Univers ${u.nom}, ${u.slogan}">
+      <span class="univ-carte__visuel">${visuel}</span>
+      <span class="univ-carte__texte">
+        <span class="univ-carte__nom">${u.nom}</span>
+        <span class="univ-carte__slogan">${u.slogan}</span>
+        <span class="univ-carte__mots">${brut(mots)}</span>
+      </span>
+      ${actif ? brut('<span class="univ-carte__marque">Theme actif</span>') : ""}
+    </button>`;
 }
 
 /** Une planche annexe, montree entiere avec sa legende. */
@@ -89,7 +85,6 @@ export function ecranUnivers(etat) {
     .map((u) => carteUnivers(u, u.id === choisi))
     .join("");
   const planches = PLANCHE_ANNEXES.map(plancheHtml).join("");
-
   const packsActifs = (etat.universes || []).length;
 
   const blocChoix = choisi
