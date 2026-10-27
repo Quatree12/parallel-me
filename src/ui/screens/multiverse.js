@@ -1,17 +1,19 @@
 /* ============================================================
    ECRAN 1 - YOUR MULTIVERSE
 
-   La sphere de reprise imprime son HTML a l'ecran : corrige.
-   Cause = des entites `&quot;` presentes dans le HTML genere par
-   mondes.js, qui ressortaient en clair. Plus aucune entite
-   desormais ; le repli est pose par un gestionnaire d'erreur.
+   Le visuel vient de visuels-mondes.js (module renomme pour
+   contourner un cache tenace de Safari sur les modules ES).
+
+   Le nom du pack n'est plus repete en sous-titre quand il est
+   identique au nom de l'univers, et chaque sphere porte un bouton
+   de gestion (renommer, dupliquer, supprimer).
    ============================================================ */
 
 import { h, esc, brut } from "../../state/dom.js";
 import { PACKS } from "../../data/params.js";
 import { quand } from "../../state/dom.js";
 import { PACK_VERS_UNIVERS } from "../../data/univers-visuels.js";
-import { mondeAnime } from "./mondes.js";
+import { mondeAnime } from "./visuels-mondes.js";
 
 /** Sous-titre utile : jamais le nom de l'univers repete. */
 function sousTitre(u, pack) {
@@ -23,7 +25,7 @@ function sousTitre(u, pack) {
   return morceaux.join(" - ");
 }
 
-/** Construit une sphere : HTML, jamais un objet brut. */
+/** Construit une sphere : renvoie du HTML, jamais un objet brut. */
 function sphere(u, pack, options) {
   const p = pack ? pack.palette : { core: "#6654E8", accent: "#F29BBF", glow: "rgba(102,84,232,.14)" };
   const compacte = options && options.compacte;

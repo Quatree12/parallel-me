@@ -1,8 +1,8 @@
 /* ============================================================
    PARALLEL ME - Point d'entree
 
-   `brancherReplis` est appele apres chaque rendu : si un visuel
-   ne se charge pas, la scene de repli prend sa place.
+   `brancherReplis` vient de visuels-mondes.js, module renomme
+   pour contourner un cache tenace de Safari sur les modules ES.
    ============================================================ */
 
 import { peindre, lier, h, brut, idCourt } from "./state/dom.js";
@@ -14,7 +14,7 @@ import { ecranCrossroads } from "./ui/screens/crossroads.js";
 import { ecranJournal } from "./ui/screens/journal.js";
 import { ecranAtlas } from "./ui/screens/atlas.js";
 import { ecranUnivers } from "./ui/screens/univers.js";
-import { brancherReplis } from "./ui/screens/mondes.js";
+import { brancherReplis } from "./ui/screens/visuels-mondes.js";
 import { modaleRenommer, modaleSupprimer, modaleGerer, modaleFragment, modaleReinitialiser } from "./ui/modales.js";
 import { modaleCreature } from "./ui/fiche-creature.js";
 import { PACKS, brouillonVide, packPourDecor, libelle, ROLES, DECORS, AMBIANCES, DEFIS } from "./data/params.js";
